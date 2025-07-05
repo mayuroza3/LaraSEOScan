@@ -7,6 +7,9 @@ use App\Models\SeoScan;
 use App\Services\SeoScannerService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SeoScanExport;
 
 class SeoScanController extends Controller
 {
@@ -79,4 +82,19 @@ class SeoScanController extends Controller
 
         return redirect()->route('scan.history')->with('success', 'Scan deleted successfully.');
     }
+
+    public function exportPdf($id)
+    {
+        $scan = SeoScan::with('pages.links', 'pages.images')->findOrFail($id);
+
+        $pdf = Pdf::loadView('exports.scan-pdf', compact('scan'));
+
+        return $pdf->download('seo-scan-' . $scan->id . '.pdf');
+    }
+
+    public function exportCsv($id)
+    {
+        return Excel::download(new SeoScanExport($id), 'seo-scan-' . $id . '.csv');
+    }
+
 }
