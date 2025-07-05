@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\SeoScanExport;
+use App\Jobs\ProcessSeoScan;
 
 class SeoScanController extends Controller
 {
@@ -45,11 +46,15 @@ class SeoScanController extends Controller
             'status' => 'PENDING'
         ]);
 
-        // Run scan via service class
-        $scanner = new SeoScannerService();
-        $scanner->scan($scan);
+        // // Run scan via service class
+        // $scanner = new SeoScannerService();
+        // $scanner->scan($scan);
 
-        return redirect()->route('scan.results', $scan->id);
+        // return redirect()->route('scan.results', $scan->id);
+
+        // Make Jobs to run this SEO Scores
+        ProcessSeoScan::dispatch($scan); // Queue the job
+        return redirect()->route('scan.status', $scan->id);
     }
 
     public function results($id)
@@ -97,4 +102,9 @@ class SeoScanController extends Controller
         return Excel::download(new SeoScanExport($id), 'seo-scan-' . $id . '.csv');
     }
 
+    public function status($id)
+    {
+        $scan = SeoScan::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        return view('scan.status', compact('scan'));
+    }
 }

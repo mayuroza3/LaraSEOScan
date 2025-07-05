@@ -16,6 +16,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/results/{id}', [SeoScanController::class, 'results'])->name('scan.results');
     Route::get('/scan/history', [SeoScanController::class, 'history'])->name('scan.history');
     Route::delete('/scan/{id}', [SeoScanController::class, 'destroy'])->name('scan.delete');
+    Route::get('/scan/{id}/status', [SeoScanController::class, 'status'])->name('scan.status');
 
     Route::get('/scan/{id}/export/pdf', [SeoScanController::class, 'exportPdf'])->name('scan.export.pdf');
     Route::get('/scan/{id}/export/csv', [SeoScanController::class, 'exportCsv'])->name('scan.export.csv');
