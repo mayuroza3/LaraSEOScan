@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('status_code')->nullable(); // e.g. 200, 404
             $table->boolean('is_internal')->default(true);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

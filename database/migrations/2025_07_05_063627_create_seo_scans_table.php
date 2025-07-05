@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('url');
             $table->string('status')->default('PENDING'); // PENDING, COMPLETED, FAILED
             $table->timestamps();
+            $table->softDeletes();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
         });
     }
 

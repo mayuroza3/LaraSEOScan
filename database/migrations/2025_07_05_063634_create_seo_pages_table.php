@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('robots')->nullable();
             $table->json('headings')->nullable(); // H1s or more
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

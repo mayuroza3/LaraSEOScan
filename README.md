@@ -3,16 +3,27 @@
 A Laravel-based on-page SEO analysis tool for developers and marketers to audit websites locally.  
 Scan a given URL, and get a detailed report of its:
 
-- ✅ Page title & meta description
-- 🖼️ All images with `alt` attributes
-- 🔗 All links with status codes (working/broken)
-- 🧾 Canonical tag, Robots tag, Headings (H1–H3)
+- ✅ Page title & meta description  
+- 🖼️ All images with `alt` attributes  
+- 🔗 All links with status codes (working/broken)  
+- 🧾 Canonical tag, Robots tag, Headings (H1–H3)  
 
 ---
 
 ## 📌 Project Purpose
 
 **LaraSEOScan** is a developer-friendly tool built in Laravel that helps you run SEO audits on any web page — locally and privately. It parses core on-page SEO elements and presents a clean report to improve content structure, link health, and image accessibility.
+
+---
+
+## 👤 User Features
+
+- 🔐 Auth system with registration and login
+- 📝 Profile with: name, email, phone (with country), company, role
+- 📅 Limit of **5 scans per user/day**
+- 📜 Personal scan history view
+- ♻️ Soft delete support for scans
+- 👁️ Users can only view scans they performed
 
 ---
 
@@ -67,29 +78,29 @@ Now visit: http://127.0.0.1:8000
 - **Laravel 11**
 - **Guzzle HTTP** – for fetching links and web pages
 - **Symfony DOMCrawler** – for HTML parsing and DOM inspection
+- **Breeze** - for Laravel Auth Scaffolding 
 - **Bootstrap 5** – for styling the user interface
-- **SQLite/MySQL** – for storing scan results
+- **Postgres/MySQL** – for storing scan results
 - **Blade Templating** – for simple and fast rendering
 
 ---
 
-## 🤝 Contributing
+## 🤝 How to Contribute
 
-Contributions are welcome! Here’s how you can help:
-
-- Open an issue for a bug or feature
-- Submit a pull request with improvements
-- ⭐ Star the repo if you found it useful!
+1. Fork the repo  
+2. Create a new branch: `feature/my-feature-name`  
+3. Make your changes  
+4. Submit a Pull Request 🚀
 
 ---
 
 ## 🧠 TODO / Roadmap Ideas
 
 - Export results as PDF/CSV  
-- Add scan history and pagination  
+- Bookmark scans for quick access  
 - Dashboard analytics for scanned data  
 - Scheduled re-scanning  
-- Basic authentication  
+- Basic authentication or admin dashboard  
 
 ---
 

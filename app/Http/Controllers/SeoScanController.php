@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SeoScan;
 use App\Services\SeoScannerService;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class SeoScanController extends Controller
 {
@@ -19,8 +21,23 @@ class SeoScanController extends Controller
             'url' => 'required|url'
         ]);
 
+
+        // Check if the user is logged in
+        $user = Auth::user();
+
+        // Check if the user has exceeded the daily limit
+        $todayScanCount = SeoScan::where('user_id', $user->id)
+            ->whereDate('created_at', Carbon::today())
+            ->count();
+
+        if ($todayScanCount >= 5) {
+            return redirect()->back()->withErrors([
+                'limit' => '🚫 You have reached your daily scan limit of 5. Please try again tomorrow.',
+            ]);
+        }
         // Create a scan entry
         $scan = SeoScan::create([
+            'user_id' => $user->id,
             'url' => $request->url,
             'status' => 'PENDING'
         ]);
@@ -34,7 +51,32 @@ class SeoScanController extends Controller
 
     public function results($id)
     {
-        $scan = SeoScan::with('pages.links', 'pages.images')->findOrFail($id);
+        $scan = SeoScan::with('pages.links', 'pages.images')
+            ->where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
         return view('scan.results', compact('scan'));
+    }
+
+    public function history()
+    {
+        $scans = SeoScan::where('user_id', Auth::id())
+            ->whereNull('deleted_at') // support soft deletes
+            ->latest()
+            ->paginate(10); // Optional: paginate results
+
+        return view('scan.history', compact('scans'));
+    }
+
+    public function destroy($id)
+    {
+        $scan = SeoScan::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+
+        $scan->delete(); // Will soft delete
+
+        return redirect()->route('scan.history')->with('success', 'Scan deleted successfully.');
     }
 }

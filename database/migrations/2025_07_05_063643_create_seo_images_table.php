@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('src');
             $table->string('alt')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
