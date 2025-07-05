@@ -6,106 +6,79 @@ use App\Models\SeoScan;
 use App\Models\SeoPage;
 use App\Models\SeoLink;
 use App\Models\SeoImage;
-use GuzzleHttp\Client;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Symfony\Component\DomCrawler\Crawler;
 
 class SeoScannerService
 {
-    protected $client;
-
-    public function __construct()
-    {
-        $this->client = new Client(['timeout' => 10]);
-    }
+    protected $visited = [];
+    protected $maxDepth = 5;
+    protected $maxPages = 25;
+    protected $pageCount = 0;
 
     public function scan(SeoScan $scan)
     {
+        $this->crawlAndScan($scan->url, $scan);
+        $scan->status = 'COMPLETED';
+        $scan->save();
+    }
+
+    protected function crawlAndScan(string $url, SeoScan $scan, int $depth = 0)
+    {
+        if ($depth > $this->maxDepth || isset($this->visited[$url]) || $this->pageCount >= $this->maxPages) {
+            return;
+        }
+
+        $this->visited[$url] = true;
+        $this->pageCount++;
+
         try {
-            $response = $this->client->get($scan->url);
-            $html = (string) $response->getBody();
-
-            $crawler = new Crawler($html);
-
-            // Extract SEO data
-            $page = SeoPage::create([
-                'seo_scan_id' => $scan->id,
-                'url' => $scan->url,
-                'title' => $crawler->filter('title')->count() ? $crawler->filter('title')->text() : null,
-                'description' => $this->getMeta($crawler, 'description'),
-                'canonical' => $this->getLinkRel($crawler, 'canonical'),
-                'robots' => $this->getMeta($crawler, 'robots'),
-                'headings' => $this->getHeadings($crawler),
-            ]);
-
-            // Save all links
-            $this->saveLinks($crawler, $page);
-
-            // Save all images
-            $this->saveImages($crawler, $page);
-
-            $scan->status = 'COMPLETED';
-            $scan->save();
+            $response = Http::timeout(10)->get($url);
         } catch (\Exception $e) {
-            $scan->status = 'FAILED';
-            $scan->save();
-            // Log error for debugging
-            \Log::error("SEO Scan Failed: " . $e->getMessage());
+            return;
         }
-    }
 
-    protected function getMeta(Crawler $crawler, string $name): ?string
-    {
-        $node = $crawler->filter("meta[name='$name']");
-        return $node->count() ? $node->attr('content') : null;
-    }
-
-    protected function getLinkRel(Crawler $crawler, string $rel): ?string
-    {
-        $node = $crawler->filter("link[rel='$rel']");
-        return $node->count() ? $node->attr('href') : null;
-    }
-
-    protected function getHeadings(Crawler $crawler): array
-    {
-        $headings = [];
-        foreach (['h1','h2','h3'] as $tag) {
-            $crawler->filter($tag)->each(function ($node) use (&$headings, $tag) {
-                $headings[] = ['tag' => $tag, 'text' => $node->text()];
-            });
+        if (!$response->successful()) {
+            return;
         }
-        return $headings;
-    }
 
-    protected function saveLinks(Crawler $crawler, SeoPage $page): void
-    {
-        $links = $crawler->filter('a[href]')->each(function ($node) use ($page) {
+        $html = $response->body();
+        $crawler = new Crawler($html, $url);
+
+        $page = SeoPage::create([
+            'seo_scan_id' => $scan->id,
+            'url' => $url,
+            'title' => optional($crawler->filter('title'))->count() ? $crawler->filter('title')->text() : null,
+            'description' => optional($crawler->filter('meta[name="description"]'))->count() ? $crawler->filter('meta[name="description"]')->attr('content') : null,
+        ]);
+
+        // Extract links
+        $crawler->filter('a')->each(function ($node) use ($page, $url) {
             $href = $node->attr('href');
-
-            $fullUrl = $this->normalizeUrl($href, $page->url);
-            $isInternal = str_starts_with($fullUrl, parse_url($page->url, PHP_URL_HOST));
-
+            if (!$href) return;
+            $absoluteUrl = $this->resolveUrl($href, $url);
             $status = null;
+
             try {
-                $res = $this->client->head($fullUrl, ['http_errors' => false]);
-                $status = $res->getStatusCode();
+                $head = Http::timeout(5)->head($absoluteUrl);
+                $status = $head->status();
             } catch (\Exception $e) {
                 $status = null;
             }
 
             SeoLink::create([
                 'seo_page_id' => $page->id,
-                'href' => $fullUrl,
+                'href' => $absoluteUrl,
                 'status_code' => $status,
-                'is_internal' => $isInternal
             ]);
         });
-    }
 
-    protected function saveImages(Crawler $crawler, SeoPage $page): void
-    {
+        // Extract images
         $crawler->filter('img')->each(function ($node) use ($page) {
             $src = $node->attr('src');
-            $alt = $node->attr('alt') ?? null;
+            $alt = $node->attr('alt');
+            if (!$src) return;
 
             SeoImage::create([
                 'seo_page_id' => $page->id,
@@ -113,16 +86,26 @@ class SeoScannerService
                 'alt' => $alt,
             ]);
         });
+
+        // Crawl internal links recursively
+        $crawler->filter('a')->each(function ($node) use ($scan, $url, $depth) {
+            $href = $node->attr('href');
+            if (!$href || Str::startsWith($href, ['mailto:', 'tel:', '#'])) return;
+
+            $linkUrl = $this->resolveUrl($href, $url);
+            if ($this->isInternal($linkUrl, $scan->url)) {
+                $this->crawlAndScan($linkUrl, $scan, $depth + 1);
+            }
+        });
     }
 
-    protected function normalizeUrl(string $href, string $baseUrl): string
+    protected function resolveUrl($relative, $base)
     {
-        // If already absolute
-        if (preg_match('/^https?:\/\//', $href)) {
-            return $href;
-        }
+        return (string) \GuzzleHttp\Psr7\UriResolver::resolve(new \GuzzleHttp\Psr7\Uri($base), new \GuzzleHttp\Psr7\Uri($relative));
+    }
 
-        // Handle relative paths
-        return rtrim($baseUrl, '/') . '/' . ltrim($href, '/');
+    protected function isInternal($url, $base)
+    {
+        return parse_url($url, PHP_URL_HOST) === parse_url($base, PHP_URL_HOST);
     }
 }

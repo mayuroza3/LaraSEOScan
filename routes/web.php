@@ -11,7 +11,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
 
 
-    Route::get('/', [SeoScanController::class, 'index'])->name('scan.form');
+    Route::get('/scan', [SeoScanController::class, 'index'])->name('scan.form');
     Route::post('/scan', [SeoScanController::class, 'scan'])->name('scan.submit');
     Route::get('/results/{id}', [SeoScanController::class, 'results'])->name('scan.results');
     Route::get('/scan/history', [SeoScanController::class, 'history'])->name('scan.history');
