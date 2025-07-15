@@ -55,6 +55,9 @@
                                         class="btn btn-sm btn-outline-success me-1" title="Export PDF">
                                         <i class="bi bi-file-earmark-pdf-fill"></i>
                                     </a>
+                                    <a href="{{ route('scan.export.csv', ['id' => $scan->id]) }}" class="btn btn-outline-success btn-sm">
+                                        <i class="fa fa-file-csv"></i> CSV
+                                    </a>
                                     <form action="{{ route('scan.delete', $scan->id) }}" method="POST" class="d-inline"
                                         onsubmit="return confirm('Are you sure you want to delete this scan?')">
                                         @csrf

@@ -6,10 +6,35 @@
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4>Scan Results</h4>
-            <a href="{{ route('scan.export.pdf', ['id' => $scan->id]) }}" class="btn btn-outline-primary">
-                🖨️ Export to PDF
-            </a>
+            <div>
+                <a href="{{ route('scan.export.pdf', ['id' => $scan->id]) }}" class="btn btn-outline-primary  btn-sm">
+                    🖨️ PDF
+                </a>
+                <a href="{{ route('scan.export.csv', ['id' => $scan->id]) }}" class="btn btn-outline-success btn-sm">
+                    📄 CSV
+                </a>
+            </div>
+        </div>
 
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1">🌐 Sitewide SEO File Check</h5>
+                <p class="mb-0">
+                    <strong>robots.txt:</strong>
+                    @if ($scan->has_robots_txt)
+                        ✅ robots.txt found
+                    @else
+                        ❌ robots.txt missing
+                    @endif
+                    <br>
+                    <strong>sitemap.xml:</strong>
+                    @if ($scan->has_sitemap_xml)
+                        ✅ sitemap.xml found
+                    @else
+                        ❌ sitemap.xml missing
+                    @endif
+                </p>
+            </div>
         </div>
 
         @foreach ($scan->pages as $index => $page)
@@ -19,7 +44,7 @@
 
                 </div>
 
-                <div id="page-{{ $index }}" >
+                <div id="page-{{ $index }}">
                     <div class="card-body">
                         <div class="row mb-3">
                             <div class="col-md-6">

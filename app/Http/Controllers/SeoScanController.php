@@ -11,6 +11,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\SeoScanExport;
 use App\Jobs\ProcessSeoScan;
+use Illuminate\Support\Facades\Http;
 
 class SeoScanController extends Controller
 {
@@ -39,11 +40,16 @@ class SeoScanController extends Controller
                 'limit' => '🚫 You have reached your daily scan limit of 5. Please try again tomorrow.',
             ]);
         }
+
+        $sitewideChecks = $this->checkSitewideSeoFiles($request->url);
+
         // Create a scan entry
         $scan = SeoScan::create([
             'user_id' => $user->id,
             'url' => $request->url,
-            'status' => 'PENDING'
+            'status' => 'PENDING',
+            'has_robots_txt' => $sitewideChecks['robots_txt'],
+            'has_sitemap_xml' => $sitewideChecks['sitemap_xml'],
         ]);
 
         // // Run scan via service class
@@ -64,8 +70,8 @@ class SeoScanController extends Controller
             ->where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
-
-        return view('scan.results', compact('scan'));
+        $sitewideChecks = $this->checkSitewideSeoFiles($scan->pages->first()->url);
+        return view('scan.results', compact('scan', 'sitewideChecks'));
     }
 
     public function history()
@@ -107,5 +113,29 @@ class SeoScanController extends Controller
     {
         $scan = SeoScan::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
         return view('scan.status', compact('scan'));
+    }
+
+    // 👇 Define this helper method within the controller class
+    protected function checkSitewideSeoFiles($url)
+    {
+        try {
+            $parsed = parse_url($url);
+            $baseUrl = $parsed['scheme'] . '://' . $parsed['host'];
+
+            $robotsResponse = Http::timeout(5)->get($baseUrl . '/robots.txt');
+            $sitemapResponse = Http::timeout(5)->get($baseUrl . '/sitemap.xml');
+
+            return [
+                'robots_txt' => $robotsResponse->successful(),
+                'sitemap_xml' => $sitemapResponse->successful(),
+                'base_url' => $baseUrl,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'robots_txt' => false,
+                'sitemap_xml' => false,
+                'base_url' => null,
+            ];
+        }
     }
 }

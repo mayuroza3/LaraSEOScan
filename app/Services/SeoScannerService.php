@@ -46,11 +46,23 @@ class SeoScannerService
         $html = $response->body();
         $crawler = new Crawler($html, $url);
 
+        $headings = [];
+        foreach (range(1, 6) as $level) {
+            $crawler->filter("h{$level}")->each(function ($node) use (&$headings, $level) {
+                $headings[] = [
+                    'tag' => "h{$level}",
+                    'text' => trim($node->text()),
+                ];
+            });
+        }
+
         $page = SeoPage::create([
             'seo_scan_id' => $scan->id,
             'url' => $url,
             'title' => optional($crawler->filter('title'))->count() ? $crawler->filter('title')->text() : null,
             'description' => optional($crawler->filter('meta[name="description"]'))->count() ? $crawler->filter('meta[name="description"]')->attr('content') : null,
+            'canonical' => $crawler->filter('link[rel=canonical]')->count() ? $crawler->filter('link[rel=canonical]')->attr('href') : null,
+            'headings' => $headings,
         ]);
 
         // Extract links
