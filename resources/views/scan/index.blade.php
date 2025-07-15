@@ -3,23 +3,36 @@
 @section('title', 'LaraSEOScan - SEO Analyzer')
 
 @section('content')
-<div class="container mt-5">
-    <h2 class="mb-4">🔍 LaraSEOScan</h2>
-    <p>Enter a website URL below to perform an on-page SEO analysis.</p>
+<div class="container py-5">
+    <div class="row">
 
-    @if ($errors->has('limit'))
-        <div class="alert alert-danger mt-3">
-            {{ $errors->first('limit') }}
+        @if(session('message'))
+            <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                {{ session('message') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">SEO Scan</h5>
+                </div>
+                <div class="card-body">
+                    {{-- Your existing form / table / content --}}
+                    <form method="POST" action="{{ route('scan.submit') }}">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="url" class="form-label">Website URL</label>
+                            <input type="text" class="form-control" name="url" id="url" placeholder="https://example.com">
+                        </div>
+                        <button type="submit" class="btn btn-success">Start Scan</button>
+                    </form>
+
+                    {{-- Add results table if applicable --}}
+                </div>
+            </div>
         </div>
-    @endif
-    <form action="{{ route('scan.submit') }}" method="POST">
-        @csrf
-        <div class="mb-3">
-            <label for="url" class="form-label">Website URL</label>
-            <input type="url" class="form-control" name="url" id="url" placeholder="https://example.com" required>
-        </div>
-        <button type="submit" class="btn btn-primary">Start Scan</button>
-        <p class="text-muted">You have {{ max(0, 5 - Auth::user()->seoScans()->withTrashed()->whereDate('created_at', now())->count()) }} scans left today.</p>
-    </form>
+    </div>
 </div>
 @endsection

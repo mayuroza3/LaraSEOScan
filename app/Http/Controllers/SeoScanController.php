@@ -54,7 +54,8 @@ class SeoScanController extends Controller
 
         // Make Jobs to run this SEO Scores
         ProcessSeoScan::dispatch($scan); // Queue the job
-        return redirect()->route('scan.status', $scan->id);
+        return redirect()->route('scan.history')
+            ->with('message', 'Scan submitted! Results will be available shortly.');
     }
 
     public function results($id)
