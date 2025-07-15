@@ -9,8 +9,6 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-
-
     Route::get('/scan', [SeoScanController::class, 'index'])->name('scan.form');
     Route::post('/scan', [SeoScanController::class, 'scan'])->name('scan.submit');
     Route::get('/results/{id}', [SeoScanController::class, 'results'])->name('scan.results');
@@ -26,4 +24,5 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::get('/', fn () => view('welcome'))->name('home');
 require __DIR__.'/auth.php';
