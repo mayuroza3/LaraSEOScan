@@ -95,24 +95,30 @@
                             <div class="tab-pane fade" id="links-{{ $index }}" role="tabpanel">
                                 <div class="table-responsive">
                                     <table class="table table-sm table-bordered align-middle">
-                                        <thead class="table-light">
+                                        <thead>
                                             <tr>
-                                                <th>URL</th>
-                                                <th>Status Code</th>
-                                                <th>Type</th>
+                                                <th class="px-2 py-1">Link</th>
+                                                <th class="px-2 py-1">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach ($page->links as $link)
+                                            @foreach($page->links as $link)
                                                 <tr>
-                                                    <td><a href="{{ $link->href }}"
-                                                            target="_blank">{{ $link->href }}</a></td>
-                                                    <td>{{ $link->status_code ?? 'N/A' }}</td>
-                                                    <td>
-                                                        <span
-                                                            class="badge bg-{{ $link->is_internal ? 'success' : 'secondary' }}">
-                                                            {{ $link->is_internal ? 'Internal' : 'External' }}
-                                                        </span>
+                                                    <td class="px-2 py-1">
+                                                        <a href="{{ e($link->href) }}"
+                                                        target="_blank"
+                                                        rel="nofollow noopener noreferrer">
+                                                        {{ Str::limit($link->href, 60) }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="px-2 py-1">
+                                                        @if($link->status_code)
+                                                            <span class="badge {{ $link->status_code >=400 ? 'bg-red-500' : 'bg-green-500' }}">
+                                                                {{ $link->status_code }}
+                                                            </span>
+                                                        @else
+                                                            <span class="badge bg-gray-500">N/A</span>
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach

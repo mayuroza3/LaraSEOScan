@@ -11,11 +11,11 @@ class SeoScan extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['url', 'status','user_id'];
+    protected $fillable = ['url', 'status','user_id','has_robots_txt', 'has_sitemap_xml','user_id'];
 
     public function pages()
     {
-        return $this->hasMany(SeoPage::class);
+        return $this->hasMany(SeoPage::class, 'seo_scan_id');
     }
 
     public function scopeTodayByUser($query, $userId)

@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\SeoScan;
-use App\Services\SeoScannerService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -12,19 +10,25 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\SeoScanExport;
 use App\Jobs\ProcessSeoScan;
 use Illuminate\Support\Facades\Http;
+use App\Http\Requests\StoreScanRequest;
 
 class SeoScanController extends Controller
 {
     public function index()
     {
-        return view('scan.index'); // Blade view with input form
+        $scans = SeoScan::where('user_id', auth()->id())
+            ->latest()
+            ->paginate(10);
+
+        // ✅ Make index show the history, not the form
+        return view('scan.history', compact('scans'));
     }
 
-    public function scan(Request $request)
+    public function scan(StoreScanRequest $request)
     {
-        $request->validate([
-            'url' => 'required|url'
-        ]);
+
+        $validated = $request->validated();
+        $url = $validated['url'];
 
 
         // Check if the user is logged in
@@ -47,7 +51,7 @@ class SeoScanController extends Controller
         $scan = SeoScan::create([
             'user_id' => $user->id,
             'url' => $request->url,
-            'status' => 'PENDING',
+            'status' => 'QUEUED',
             'has_robots_txt' => $sitewideChecks['robots_txt'],
             'has_sitemap_xml' => $sitewideChecks['sitemap_xml'],
         ]);
@@ -59,7 +63,7 @@ class SeoScanController extends Controller
         // return redirect()->route('scan.results', $scan->id);
 
         // Make Jobs to run this SEO Scores
-        ProcessSeoScan::dispatch($scan); // Queue the job
+        ProcessSeoScan::dispatch($scan);
         return redirect()->route('scan.history')
             ->with('message', 'Scan submitted! Results will be available shortly.');
     }

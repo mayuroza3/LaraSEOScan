@@ -9,6 +9,8 @@ use App\Models\SeoImage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Symfony\Component\DomCrawler\Crawler;
+use GuzzleHttp\Pool;
+use GuzzleHttp\Client;
 
 class SeoScannerService
 {
@@ -119,5 +121,55 @@ class SeoScannerService
     protected function isInternal($url, $base)
     {
         return parse_url($url, PHP_URL_HOST) === parse_url($base, PHP_URL_HOST);
+    }
+
+    protected function checkLinks(array $links): array
+    {
+        $client = new Client([
+            'timeout' => 5,
+            'allow_redirects' => true,
+            'headers' => ['User-Agent' => 'LaraSEOScanBot/1.0'],
+        ]);
+
+        $results = [];
+
+        $requests = function ($links) use ($client) {
+            foreach ($links as $link) {
+                yield function () use ($client, $link) {
+                    return $client->headAsync($link);
+                };
+            }
+        };
+
+        $pool = new Pool($client, $requests($links), [
+            'concurrency' => 10,
+            'fulfilled' => function ($response, $index) use (&$results, $links) {
+                $results[$links[$index]] = $response->getStatusCode();
+            },
+            'rejected' => function ($reason, $index) use (&$results, $links) {
+                $results[$links[$index]] = null;
+            },
+        ]);
+
+        $pool->promise()->wait();
+
+        return $results;
+    }
+    protected function fetchRobotsTxt(string $url): ?string
+    {
+        try {
+            return Http::timeout(5)->get($url . '/robots.txt')->body();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    protected function fetchSitemap(string $url): ?string
+    {
+        try {
+            return Http::timeout(5)->get($url . '/sitemap.xml')->body();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

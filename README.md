@@ -34,6 +34,14 @@ Scan a given URL, and get a detailed report of its:
 
 ---
 
+## Requirements
+- PHP 8.2+
+- Composer
+- Node.js 18+ & npm
+- MySQL, or PostgreSQL
+
+---
+
 ## ⚙️ Setup Instructions
 
 1. **Clone the repo**
@@ -47,21 +55,32 @@ cd LaraSEOScan
 2. **Install dependencies**
 ```
 composer install
+
+npm install
+npm run dev   # for hot reload
+# or npm run build for production
+
 cp .env.example .env
 php artisan key:generate
 ```
 
 3. **Configure `.env`**
-Set up your DB (SQLite recommended for local):
+Set up your DB:
 ```
-DB_CONNECTION=sqlite
-DB_DATABASE=/absolute/path/to/database.sqlite
+DB_CONNECTION=mysql
+DB_DATABASE=
+DB_USER=
+DB_PASSWORD=
 ```
 Create the database file if it doesn't exist:
 
 4. **Run migrations**
 ```
 php artisan migrate
+```
+# Run queue worker (required for scans)
+```
+php artisan queue:work
 ```
 
 5. **Start the app**
@@ -75,7 +94,7 @@ Now visit: http://127.0.0.1:8000
 
 ## 🛠️ Tech Stack
 
-- **Laravel 11**
+- **Laravel 12**
 - **Guzzle HTTP** – for fetching links and web pages
 - **Symfony DOMCrawler** – for HTML parsing and DOM inspection
 - **Breeze** - for Laravel Auth Scaffolding 
