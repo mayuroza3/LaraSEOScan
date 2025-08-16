@@ -18,11 +18,18 @@ class SeoPage extends Model
         'description',
         'canonical',
         'robots',
-        'headings'
+        'headings',
+        'status_code',
+        'word_count',
+        'shingle_signature',
+        'structured_data',
+        'fetched_at',
     ];
 
     protected $casts = [
         'headings' => 'array',
+        'structured_data' => 'array',
+        'fetched_at' => 'datetime',
     ];
 
     public function scan()
@@ -42,5 +49,10 @@ class SeoPage extends Model
     public function images()
     {
         return $this->hasMany(SeoImage::class);
+    }
+
+    public function issues()
+    {
+        return $this->hasMany(SeoIssue::class, 'seo_page_id');
     }
 }

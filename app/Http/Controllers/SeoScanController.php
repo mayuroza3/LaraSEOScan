@@ -24,6 +24,12 @@ class SeoScanController extends Controller
         return view('scan.history', compact('scans'));
     }
 
+    public function create()
+    {
+        // This just shows the "New Scan" form
+        return view('scan.index');
+    }
+
     public function scan(StoreScanRequest $request)
     {
 
