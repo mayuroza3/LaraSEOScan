@@ -13,6 +13,7 @@ use GuzzleHttp\Pool;
 use GuzzleHttp\Client;
 use App\Seo\Rules\Registry;
 use App\Models\SeoIssue;
+use GuzzleHttp\Promise\Utils;
 
 class SeoScannerService
 {
@@ -23,7 +24,8 @@ class SeoScannerService
 
     public function scan(SeoScan $scan)
     {
-        $this->crawlAndScan($scan->url, $scan);
+        // $this->crawlAndScan($scan->url, $scan);
+        $this->crawlBatch([$scan->url], $scan, 0);
         $scan->status = 'COMPLETED';
         $scan->save();
     }
@@ -202,4 +204,101 @@ class SeoScannerService
         }
     }
 
+    /**
+     * Crawl multiple URLs in parallel with Pool
+     */
+    protected function crawlBatch(array $urls, SeoScan $scan, int $depth)
+    {
+        if ($depth > $this->maxDepth || $this->pageCount >= $this->maxPages) {
+            return;
+        }
+
+        $client = new Client([
+            'timeout' => 10,
+            'allow_redirects' => true,
+            'http_errors' => false,
+            'verify' => false,
+            'headers' => ['User-Agent' => 'LaraSEOScanBot/1.0'],
+        ]);
+
+        $urls = array_filter($urls, fn($u) => !isset($this->visited[$u]));
+        if (empty($urls)) return;
+
+        foreach ($urls as $u) {
+            $this->visited[$u] = true;
+        }
+
+        $requests = function ($urls) {
+            foreach ($urls as $url) {
+                yield new \GuzzleHttp\Psr7\Request('GET', $url);
+            }
+        };
+
+        $nextBatch = [];
+
+        $pool = new Pool($client, $requests($urls), [
+            'concurrency' => 5,
+            'fulfilled' => function ($response, $index) use ($urls, $scan, &$nextBatch, $depth) {
+                $url = $urls[$index];
+                if ($this->pageCount >= $this->maxPages) return;
+
+                if ($response->getStatusCode() !== 200) {
+                    return;
+                }
+
+                $html = (string) $response->getBody();
+                $crawler = new Crawler($html, $url);
+
+                // ✅ create page & run rules
+                $page = SeoPage::create([
+                    'seo_scan_id' => $scan->id,
+                    'url' => $url,
+                    'title' => $crawler->filter('title')->count() ? $crawler->filter('title')->text() : null,
+                    'description' => $crawler->filter('meta[name="description"]')->count() ? $crawler->filter('meta[name="description"]')->attr('content') : null,
+                    'canonical' => $crawler->filter('link[rel=canonical]')->count() ? $crawler->filter('link[rel=canonical]')->attr('href') : null,
+                    'headings' => [], // keep simple, you already had heading extraction
+                ]);
+
+                $this->runRules($page, $html);
+                $this->pageCount++;
+
+                // ✅ links
+                $crawler->filter('a')->each(function ($node) use ($page, $url, &$nextBatch, $scan) {
+                    $href = $node->attr('href');
+                    if (!$href || Str::startsWith($href, ['mailto:', 'tel:', '#'])) return;
+                    $absoluteUrl = $this->resolveUrl($href, $url);
+
+                    SeoLink::create([
+                        'seo_page_id' => $page->id,
+                        'href' => $absoluteUrl,
+                        'status_code' => null, // bulk check with checkLinks() if needed
+                    ]);
+
+                    if ($this->isInternal($absoluteUrl, $scan->url)) {
+                        $nextBatch[] = $absoluteUrl;
+                    }
+                });
+
+                // ✅ images
+                $crawler->filter('img')->each(function ($node) use ($page) {
+                    $src = $node->attr('src');
+                    if (!$src) return;
+                    SeoImage::create([
+                        'seo_page_id' => $page->id,
+                        'src' => $src,
+                        'alt' => $node->attr('alt'),
+                    ]);
+                });
+            },
+            'rejected' => function ($reason, $index) use ($urls) {
+                // optional logging
+            },
+        ]);
+
+        $pool->promise()->wait();
+
+        if (!empty($nextBatch) && $this->pageCount < $this->maxPages) {
+            $this->crawlBatch(array_unique($nextBatch), $scan, $depth + 1);
+        }
+    }
 }

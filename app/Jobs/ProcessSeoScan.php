@@ -1,7 +1,4 @@
 <?php
-
-// app/Jobs/ProcessSeoScan.php
-
 namespace App\Jobs;
 
 use App\Models\SeoScan;

@@ -25,6 +25,8 @@ return [
 
         // Structured Data
         \App\Seo\Rules\JsonLdValidatorRule::class    => true,
+        // Links
+        \App\Seo\Rules\BrokenLinkRule::class         => false,
     ],
 
     /*
@@ -40,6 +42,7 @@ return [
         'content'    => 25,
         'og'         => 15,
         'structured' => 30,
+        'links'      => 10,
     ],
 
     /*
