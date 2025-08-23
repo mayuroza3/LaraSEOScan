@@ -5,13 +5,15 @@ class Registry
 {
     public static function all(): array
     {
-        return [
-            \App\Seo\Rules\MissingTitleRule::class,
-            \App\Seo\Rules\MetaDescriptionRule::class,
-            \App\Seo\Rules\H1Rule::class,
-            \App\Seo\Rules\OpenGraphRule::class,
-            \App\Seo\Rules\JsonLdValidatorRule::class,
-            \App\Seo\Rules\ShingleDuplicateRule::class,
-        ];
+        $rules = config('seo.rules', []);
+        $enabled = [];
+
+        foreach ($rules as $class => $active) {
+            if ($active && class_exists($class)) {
+                $enabled[] = app($class);
+            }
+        }
+
+        return $enabled;
     }
 }

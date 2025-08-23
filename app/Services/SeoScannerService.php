@@ -11,6 +11,8 @@ use Illuminate\Support\Str;
 use Symfony\Component\DomCrawler\Crawler;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Client;
+use App\Seo\Rules\Registry;
+use App\Models\SeoIssue;
 
 class SeoScannerService
 {
@@ -66,6 +68,7 @@ class SeoScannerService
             'canonical' => $crawler->filter('link[rel=canonical]')->count() ? $crawler->filter('link[rel=canonical]')->attr('href') : null,
             'headings' => $headings,
         ]);
+        $this->runRules($page, $html);
 
         // Extract links
         $crawler->filter('a')->each(function ($node) use ($page, $url) {
@@ -172,4 +175,31 @@ class SeoScannerService
             return null;
         }
     }
+
+    protected function runRules(SeoPage $page, string $html): void
+    {
+        $dom = new \DOMDocument();
+        libxml_use_internal_errors(true);
+        $dom->loadHTML($html);
+        libxml_clear_errors();
+        $xpath = new \DOMXPath($dom);
+
+
+        foreach (Registry::all() as $rule) {
+            // Pass html as the 3rd argument
+            $issues = $rule->check($page, $dom, $xpath);
+
+            foreach ($issues as $issue) {
+                SeoIssue::create([
+                    'seo_page_id' => $page->id,
+                    'rule_key'    => $rule->key(),
+                    'severity'    => $issue['severity'] ?? 'info',
+                    'message'     => $issue['message'] ?? 'Unknown issue',
+                    'selector'    => $issue['selector'] ?? null,
+                    'context'     => $issue['context'] ?? null,
+                ]);
+            }
+        }
+    }
+
 }

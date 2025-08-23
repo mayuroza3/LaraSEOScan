@@ -80,6 +80,9 @@ class SeoScanController extends Controller
             ->where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
+        if (!$scan) {
+            return redirect()->back()->withErrors('Scan not found.');
+        }
         $sitewideChecks = $this->checkSitewideSeoFiles($scan->pages->first()->url);
         return view('scan.results', compact('scan', 'sitewideChecks'));
     }

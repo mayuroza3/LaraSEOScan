@@ -5,8 +5,8 @@ use App\Models\SeoPage;
 
 class MetaDescriptionRule implements SeoRule
 {
-    public function key(): string { return 'meta.description_length'; }
-    public function title(): string { return 'Meta description length'; }
+    public function key(): string { return 'meta.description'; }
+    public function title(): string { return 'Meta description presence and length'; }
     public function category(): string { return 'meta'; }
 
     public function check(SeoPage $page, \DOMDocument $dom, \DOMXPath $xpath): array
@@ -38,7 +38,7 @@ class MetaDescriptionRule implements SeoRule
             $issues[] = [
                 'rule' => $this->key(),
                 'severity' => 'warning',
-                'message' => "Meta description is very short ({$len} chars). Recommended 50–160 chars.",
+                'message' => "Meta description too short ({$len} chars). Recommended 50–160 characters.",
                 'selector' => 'meta[name=description]',
                 'context' => ['length' => $len],
             ];
@@ -46,7 +46,7 @@ class MetaDescriptionRule implements SeoRule
             $issues[] = [
                 'rule' => $this->key(),
                 'severity' => 'warning',
-                'message' => "Meta description is long ({$len} chars). Recommended 50–160 chars.",
+                'message' => "Meta description too long ({$len} chars). Recommended 50–160 characters.",
                 'selector' => 'meta[name=description]',
                 'context' => ['length' => $len],
             ];

@@ -74,6 +74,10 @@
                                     data-bs-target="#images-{{ $index }}" type="button" role="tab">🖼️
                                     Images</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="issues-tab-{{ $index }}" data-bs-toggle="tab"
+                                    data-bs-target="#issues-{{ $index }}" type="button" role="tab">⚠️ SEO Issues</button>
+                            </li>
                         </ul>
                         <div class="tab-content border border-top-0 p-3" id="tabs-content-{{ $index }}">
                             <!-- Headings Tab -->
@@ -113,7 +117,7 @@
                                                     </td>
                                                     <td class="px-2 py-1">
                                                         @if($link->status_code)
-                                                            <span class="badge {{ $link->status_code >=400 ? 'bg-red-500' : 'bg-green-500' }}">
+                                                            <span class="badge {{ $link->status_code >=400 ? 'bg-danger' : 'bg-success' }}">
                                                                 {{ $link->status_code }}
                                                             </span>
                                                         @else
@@ -148,6 +152,49 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+
+                            <!-- SEO Issues Tab -->
+                            <div class="tab-pane fade" id="issues-{{ $index }}" role="tabpanel">
+                                @if ($page->issues->count())
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Rule</th>
+                                                    <th>Severity</th>
+                                                    <th>Message</th>
+                                                    <th>Context</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($page->issues as $issue)
+                                                    <tr>
+                                                        <td>{{ $issue->rule_key }}</td>
+                                                        <td>
+                                                            <span class="badge bg-{{ $issue->severity == 'error' ? 'danger' : ($issue->severity == 'warning' ? 'warning' : 'info') }}">
+                                                                {{ ucfirst($issue->severity) }}
+                                                            </span>
+                                                        </td>
+                                                        <td>{{ $issue->message }}</td>
+                                                        <td>
+                                                            @if ($issue->context)
+                                                                @php
+                                                                    $context = is_array($issue->context) ? json_encode($issue->context) : (string) $issue->context;
+                                                                @endphp
+                                                                <code>{{ Str::limit($context, 80) }}</code>
+                                                            @else
+                                                                -
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <p class="text-success">✅ No SEO issues found on this page!</p>
+                                @endif
                             </div>
                         </div> <!-- tab-content -->
                     </div>

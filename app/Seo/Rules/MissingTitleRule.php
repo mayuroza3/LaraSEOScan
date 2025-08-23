@@ -5,8 +5,8 @@ use App\Models\SeoPage;
 
 class MissingTitleRule implements SeoRule
 {
-    public function key(): string { return 'meta.missing_title'; }
-    public function title(): string { return 'Missing or empty title'; }
+    public function key(): string { return 'meta.title'; }
+    public function title(): string { return 'Title tag presence and length'; }
     public function category(): string { return 'meta'; }
 
     public function check(SeoPage $page, \DOMDocument $dom, \DOMXPath $xpath): array
@@ -25,8 +25,27 @@ class MissingTitleRule implements SeoRule
                 'severity' => 'error',
                 'message' => 'Title tag is missing or empty.',
                 'selector' => 'head > title',
-                'context' => ['found' => $title],
+                'context' => [],
             ];
+        } else {
+            $len = mb_strlen($title);
+            if ($len < 30) {
+                $issues[] = [
+                    'rule' => $this->key(),
+                    'severity' => 'warning',
+                    'message' => "Title is too short ({$len} chars). Recommended 30–60 characters.",
+                    'selector' => 'head > title',
+                    'context' => ['length' => $len, 'title' => $title],
+                ];
+            } elseif ($len > 60) {
+                $issues[] = [
+                    'rule' => $this->key(),
+                    'severity' => 'warning',
+                    'message' => "Title is too long ({$len} chars). Recommended 30–60 characters.",
+                    'selector' => 'head > title',
+                    'context' => ['length' => $len, 'title' => $title],
+                ];
+            }
         }
 
         $page->title = $title;

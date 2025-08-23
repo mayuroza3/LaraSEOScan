@@ -19,7 +19,7 @@ class H1Rule implements SeoRule
             $issues[] = [
                 'rule' => $this->key(),
                 'severity' => 'error',
-                'message' => 'No H1 found on page.',
+                'message' => 'No H1 found on page. Each page should have exactly one H1.',
                 'selector' => 'h1',
                 'context' => [],
             ];
@@ -27,7 +27,7 @@ class H1Rule implements SeoRule
             $issues[] = [
                 'rule' => $this->key(),
                 'severity' => 'warning',
-                'message' => "{$count} H1 elements found; multiple H1s can confuse search engines.",
+                'message' => "{$count} H1 elements found. Recommended: exactly 1 H1 per page.",
                 'selector' => 'h1',
                 'context' => ['count' => $count],
             ];
