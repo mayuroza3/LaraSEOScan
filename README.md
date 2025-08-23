@@ -1,6 +1,7 @@
 # 🔍 LaraSEOScan
 
-A Laravel-based on-page SEO analysis tool for developers and marketers to audit websites locally.  
+LaraSEOScan is a Laravel-based SEO Scanner tool that audits websites for meta tags, broken links, and SEO optimization.
+
 Scan a given URL, and get a detailed report of its:
 
 - ✅ Page title & meta description  
@@ -104,6 +105,10 @@ Now visit: http://127.0.0.1:8000
 
 ---
 
+![Laravel](https://img.shields.io/badge/Laravel-SEO-orange)
+![License](https://img.shields.io/github/license/mayuroza3/LaraSEOScan)
+![Stars](https://img.shields.io/github/stars/mayuroza3/LaraSEOScan?style=social)
+---
 ## 🤝 How to Contribute
 
 1. Fork the repo  
