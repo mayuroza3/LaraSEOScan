@@ -26,7 +26,7 @@ return [
         // Structured Data
         \App\Seo\Rules\JsonLdValidatorRule::class    => true,
         // Links
-        \App\Seo\Rules\BrokenLinkRule::class         => false,
+        \App\Seo\Rules\BrokenLinkRule::class         => true,
     ],
 
     /*
