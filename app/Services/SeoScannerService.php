@@ -19,7 +19,7 @@ class SeoScannerService
 {
     protected $visited = [];
     protected $maxDepth = 5;
-    protected $maxPages = 25;
+    protected $maxPages = 200;
     protected $pageCount = 0;
 
     public function scan(SeoScan $scan)
@@ -221,7 +221,7 @@ class SeoScannerService
             'headers' => ['User-Agent' => 'LaraSEOScanBot/1.0'],
         ]);
 
-        $urls = array_filter($urls, fn($u) => !isset($this->visited[$u]));
+        $urls = array_values(array_filter($urls, fn($u) => !isset($this->visited[$u])));
         if (empty($urls)) return;
 
         foreach ($urls as $u) {
@@ -249,6 +249,16 @@ class SeoScannerService
                 $html = (string) $response->getBody();
                 $crawler = new Crawler($html, $url);
 
+                $headings = [];
+                foreach (range(1, 6) as $level) {
+                    $crawler->filter("h{$level}")->each(function ($node) use (&$headings, $level) {
+                        $headings[] = [
+                            'tag' => "h{$level}",
+                            'text' => trim($node->text()),
+                        ];
+                    });
+                }
+
                 // ✅ create page & run rules
                 $page = SeoPage::create([
                     'seo_scan_id' => $scan->id,
@@ -256,7 +266,7 @@ class SeoScannerService
                     'title' => $crawler->filter('title')->count() ? $crawler->filter('title')->text() : null,
                     'description' => $crawler->filter('meta[name="description"]')->count() ? $crawler->filter('meta[name="description"]')->attr('content') : null,
                     'canonical' => $crawler->filter('link[rel=canonical]')->count() ? $crawler->filter('link[rel=canonical]')->attr('href') : null,
-                    'headings' => [], // keep simple, you already had heading extraction
+                    'headings' => $headings,
                 ]);
 
                 $this->runRules($page, $html);

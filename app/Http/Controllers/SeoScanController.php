@@ -45,7 +45,7 @@ class SeoScanController extends Controller
             ->whereDate('created_at', Carbon::today())
             ->count();
 
-        if ($todayScanCount >= 5) {
+        if ($todayScanCount >= 100) {
             return redirect()->back()->withErrors([
                 'limit' => '🚫 You have reached your daily scan limit of 5. Please try again tomorrow.',
             ]);
