@@ -13,6 +13,9 @@ use GuzzleHttp\Pool;
 use GuzzleHttp\Client;
 use App\Seo\Rules\Registry;
 use App\Models\SeoIssue;
+use App\Services\Seo\RobotsTxtService;
+use App\Services\Seo\SitemapService;
+use App\Services\Seo\KeywordDensityService;
 use GuzzleHttp\Promise\Utils;
 
 class SeoScannerService
@@ -21,11 +24,53 @@ class SeoScannerService
     protected $maxDepth = 5;
     protected $maxPages = 200;
     protected $pageCount = 0;
+    
+    protected RobotsTxtService $robotsService;
+    protected SitemapService $sitemapService;
+    protected KeywordDensityService $keywordService;
+    
+    public function __construct(
+        RobotsTxtService $robotsService, 
+        SitemapService $sitemapService,
+        KeywordDensityService $keywordService
+    )
+    {
+        $this->robotsService = $robotsService;
+        $this->sitemapService = $sitemapService;
+        $this->keywordService = $keywordService;
+    }
 
     public function scan(SeoScan $scan)
     {
         // $this->crawlAndScan($scan->url, $scan);
         $this->crawlBatch([$scan->url], $scan, 0);
+
+        // Post-crawl: Sitemap Analysis
+        if (!empty($this->sitemapService->getUrls())) {
+             $crawledUrls = SeoPage::where('seo_scan_id', $scan->id)->pluck('url')->toArray();
+             // Normalize URLs for comparison (trim slashes)
+             $crawledUrls = array_map(fn($u) => rtrim($u, '/'), $crawledUrls);
+             
+             $sitemapUrls = array_map(fn($u) => rtrim($u, '/'), $this->sitemapService->getUrls());
+             
+             // Orphan check (in Sitemap but not crawled)
+             $missing = array_diff($sitemapUrls, $crawledUrls);
+             
+             // We'll attach to the first page for visibility if it exists.
+             $firstPage = $scan->pages()->first();
+             if ($firstPage && !empty($missing)) {
+                 foreach (array_slice($missing, 0, 50) as $missingUrl) {
+                     SeoIssue::create([
+                        'seo_page_id' => $firstPage->id,
+                        'rule_key' => 'sitemap.missing_page',
+                        'severity' => 'warning',
+                        'message' => 'Page in sitemap but not crawled.',
+                        'context' => ['url' => $missingUrl],
+                     ]);
+                 }
+             }
+        }
+
         $scan->status = 'COMPLETED';
         $scan->save();
     }
@@ -182,24 +227,34 @@ class SeoScannerService
     {
         $dom = new \DOMDocument();
         libxml_use_internal_errors(true);
-        $dom->loadHTML($html);
+        // UTF-8 hack
+        if (!empty($html)) {
+             try {
+                 $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING);
+             } catch (\Exception $e) {
+                 // Fallback
+                 @$dom->loadHTML($html);
+             }
+        }
         libxml_clear_errors();
         $xpath = new \DOMXPath($dom);
 
-
         foreach (Registry::all() as $rule) {
-            // Pass html as the 3rd argument
-            $issues = $rule->check($page, $dom, $xpath);
+            try {
+                $issues = $rule->check($page, $dom, $xpath);
 
-            foreach ($issues as $issue) {
-                SeoIssue::create([
-                    'seo_page_id' => $page->id,
-                    'rule_key'    => $rule->key(),
-                    'severity'    => $issue['severity'] ?? 'info',
-                    'message'     => $issue['message'] ?? 'Unknown issue',
-                    'selector'    => $issue['selector'] ?? null,
-                    'context'     => $issue['context'] ?? null,
-                ]);
+                foreach ($issues as $issue) {
+                    SeoIssue::create([
+                        'seo_page_id' => $page->id,
+                        'rule_key'    => $rule->key(),
+                        'severity'    => $issue['severity'] ?? 'info',
+                        'message'     => $issue['message'] ?? 'Unknown issue',
+                        'selector'    => $issue['selector'] ?? null,
+                        'context'     => $issue['context'] ?? null,
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error("Rule failed: " . get_class($rule) . " - " . $e->getMessage());
             }
         }
     }
@@ -215,22 +270,42 @@ class SeoScannerService
 
         $client = new Client([
             'timeout' => 10,
-            'allow_redirects' => true,
+            'allow_redirects' => [
+                'track_redirects' => true,
+            ],
             'http_errors' => false,
             'verify' => false,
             'headers' => ['User-Agent' => 'LaraSEOScanBot/1.0'],
         ]);
 
-        $urls = array_values(array_filter($urls, fn($u) => !isset($this->visited[$u])));
+        $urls = array_values(array_filter($urls, function ($u) {
+            if (isset($this->visited[$u])) return false;
+            // Check robots.txt
+            try {
+                if (!$this->robotsService->isAllowed($u)) {
+                    // Could create an issue here but we haven't created a page yet...
+                    // Ideally, we skip it.
+                    return false;
+                }
+            } catch (\Exception $e) {
+                // If robots check fails, assume safe to crawl or skip? 
+                // Let's assume allowed if service fails.
+                Log::warning("Robots check failed for $u: " . $e->getMessage());
+            }
+            return true;
+        }));
+
         if (empty($urls)) return;
 
         foreach ($urls as $u) {
             $this->visited[$u] = true;
         }
 
-        $requests = function ($urls) {
+        $requests = function ($urls) use ($client) {
             foreach ($urls as $url) {
-                yield new \GuzzleHttp\Psr7\Request('GET', $url);
+                yield function() use ($client, $url) {
+                    return $client->getAsync($url);
+                };
             }
         };
 
@@ -240,68 +315,79 @@ class SeoScannerService
             'concurrency' => 5,
             'fulfilled' => function ($response, $index) use ($urls, $scan, &$nextBatch, $depth) {
                 $url = $urls[$index];
-                if ($this->pageCount >= $this->maxPages) return;
+                try {
+                    if ($this->pageCount >= $this->maxPages) return;
 
-                if ($response->getStatusCode() !== 200) {
-                    return;
-                }
-
-                $html = (string) $response->getBody();
-                $crawler = new Crawler($html, $url);
-
-                $headings = [];
-                foreach (range(1, 6) as $level) {
-                    $crawler->filter("h{$level}")->each(function ($node) use (&$headings, $level) {
-                        $headings[] = [
-                            'tag' => "h{$level}",
-                            'text' => trim($node->text()),
-                        ];
-                    });
-                }
-
-                // ✅ create page & run rules
-                $page = SeoPage::create([
-                    'seo_scan_id' => $scan->id,
-                    'url' => $url,
-                    'title' => $crawler->filter('title')->count() ? $crawler->filter('title')->text() : null,
-                    'description' => $crawler->filter('meta[name="description"]')->count() ? $crawler->filter('meta[name="description"]')->attr('content') : null,
-                    'canonical' => $crawler->filter('link[rel=canonical]')->count() ? $crawler->filter('link[rel=canonical]')->attr('href') : null,
-                    'headings' => $headings,
-                ]);
-
-                $this->runRules($page, $html);
-                $this->pageCount++;
-
-                // ✅ links
-                $crawler->filter('a')->each(function ($node) use ($page, $url, &$nextBatch, $scan) {
-                    $href = $node->attr('href');
-                    if (!$href || Str::startsWith($href, ['mailto:', 'tel:', '#'])) return;
-                    $absoluteUrl = $this->resolveUrl($href, $url);
-
-                    SeoLink::create([
-                        'seo_page_id' => $page->id,
-                        'href' => $absoluteUrl,
-                        'status_code' => null, // bulk check with checkLinks() if needed
-                    ]);
-
-                    if ($this->isInternal($absoluteUrl, $scan->url)) {
-                        $nextBatch[] = $absoluteUrl;
+                    if ($response->getStatusCode() !== 200) {
+                        return;
                     }
-                });
 
-                // ✅ images
-                $crawler->filter('img')->each(function ($node) use ($page) {
-                    $src = $node->attr('src');
-                    if (!$src) return;
-                    SeoImage::create([
-                        'seo_page_id' => $page->id,
-                        'src' => $src,
-                        'alt' => $node->attr('alt'),
+                    $html = (string) $response->getBody();
+                    $crawler = new Crawler($html, $url);
+
+                    $headings = [];
+                    foreach (range(1, 6) as $level) {
+                        $crawler->filter("h{$level}")->each(function ($node) use (&$headings, $level) {
+                            $headings[] = [
+                                'tag' => "h{$level}",
+                                'text' => trim($node->text()),
+                            ];
+                        });
+                    }
+
+                    // Calculate metrics
+                    $density = $this->keywordService->analyze($html);
+                    
+                    // ✅ create page & run rules
+                    $page = SeoPage::create([
+                        'seo_scan_id' => $scan->id,
+                        'url' => $url,
+                        'title' => $crawler->filter('title')->count() ? $crawler->filter('title')->text() : null,
+                        'description' => $crawler->filter('meta[name="description"]')->count() ? $crawler->filter('meta[name="description"]')->attr('content') : null,
+                        'canonical' => $crawler->filter('link[rel=canonical]')->count() ? $crawler->filter('link[rel=canonical]')->attr('href') : null,
+                        'headings' => $headings,
+                        'keyword_density' => $density,
                     ]);
-                });
+
+                    $this->pageCount++;
+
+                    // ✅ links
+                    $crawler->filter('a')->each(function ($node) use ($page, $url, &$nextBatch, $scan) {
+                        $href = $node->attr('href');
+                        if (!$href || Str::startsWith($href, ['mailto:', 'tel:', '#'])) return;
+                        $absoluteUrl = $this->resolveUrl($href, $url);
+
+                        SeoLink::create([
+                            'seo_page_id' => $page->id,
+                            'href' => $absoluteUrl,
+                            'status_code' => null, // bulk check with checkLinks() if needed
+                            'is_internal' => $this->isInternal($absoluteUrl, $scan->url),
+                        ]);
+
+                        if ($this->isInternal($absoluteUrl, $scan->url)) {
+                            $nextBatch[] = $absoluteUrl;
+                        }
+                    });
+
+                    // ✅ images
+                    $crawler->filter('img')->each(function ($node) use ($page) {
+                        $src = $node->attr('src');
+                        if (!$src) return;
+                        SeoImage::create([
+                            'seo_page_id' => $page->id,
+                            'src' => $src,
+                            'alt' => $node->attr('alt'),
+                        ]);
+                    });
+
+                    // ✅ Run Rules AFTER links/images are saved so rules can access relationships
+                    $this->runRules($page, $html);
+                } catch (\Exception $e) {
+                     Log::error("Failed processing page $url: " . $e->getMessage());
+                }
             },
             'rejected' => function ($reason, $index) use ($urls) {
-                // optional logging
+                 Log::warning("Failed to crawl {$urls[$index]}: " . $reason->getMessage());
             },
         ]);
 

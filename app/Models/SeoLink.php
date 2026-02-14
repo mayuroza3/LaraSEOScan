@@ -15,7 +15,13 @@ class SeoLink extends Model
         'seo_page_id',
         'href',
         'status_code',
-        'is_internal'
+        'is_internal',
+        'redirect_chain',
+    ];
+
+    protected $casts = [
+        'redirect_chain' => 'array',
+        'is_internal' => 'boolean',
     ];
 
     public function page()

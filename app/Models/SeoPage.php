@@ -24,11 +24,15 @@ class SeoPage extends Model
         'shingle_signature',
         'structured_data',
         'fetched_at',
+        'keyword_density',
+        'image_total_size',
+        'image_unoptimized_count',
     ];
 
     protected $casts = [
         'headings' => 'array',
         'structured_data' => 'array',
+        'keyword_density' => 'array',
         'fetched_at' => 'datetime',
     ];
 

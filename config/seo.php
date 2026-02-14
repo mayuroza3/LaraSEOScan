@@ -24,9 +24,27 @@ return [
         \App\Seo\Rules\OpenGraphRule::class          => true,
 
         // Structured Data
+        // Structured Data
         \App\Seo\Rules\JsonLdValidatorRule::class    => true,
         // Links
         \App\Seo\Rules\BrokenLinkRule::class         => true,
+        // ImageOptimization
+        \App\Seo\Rules\ImageOptimizationRule::class  => true,
+        // keyword Density
+        \App\Seo\Rules\KeywordDensityRule::class     => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Crawler Settings
+    |--------------------------------------------------------------------------
+    */
+    'crawler' => [
+        'max_redirects' => 5,
+        'image_max_size_kb' => 200,
+        'keyword_density_min' => 0.5,
+        'keyword_density_max' => 3,
+        'check_external_links' => false,
     ],
 
     /*
