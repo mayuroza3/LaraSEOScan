@@ -66,8 +66,8 @@
                 <tbody>
                     @foreach ($page->headings as $heading)
                         <tr>
-                            <td>{{ strtoupper($heading['tag']) }}</td>
-                            <td>{{ $heading['text'] }}</td>
+                            <td>{{ isset($heading['tag']) ? strtoupper($heading['tag']) : 'N/A' }}</td>
+                            <td>{{ isset($heading['text']) ? $heading['text'] : '' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

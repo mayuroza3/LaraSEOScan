@@ -24,10 +24,9 @@ return [
         \App\Seo\Rules\OpenGraphRule::class          => true,
 
         // Structured Data
-        // Structured Data
         \App\Seo\Rules\JsonLdValidatorRule::class    => true,
         // Links
-        \App\Seo\Rules\BrokenLinkRule::class         => true,
+        \App\Seo\Rules\BrokenLinkRule::class         => false,
         // ImageOptimization
         \App\Seo\Rules\ImageOptimizationRule::class  => true,
         // keyword Density

@@ -19,9 +19,21 @@ class SeoScanController extends Controller
         $scans = SeoScan::where('user_id', auth()->id())
             ->latest()
             ->paginate(10);
+            
+         // Stats for dashboard
+         $scanStats = [
+            'total' => SeoScan::where('user_id', auth()->id())->count(),
+            'completed' => SeoScan::where('user_id', auth()->id())->where('status', 'COMPLETED')->count(),
+            'pending' => SeoScan::where('user_id', auth()->id())->where('status', '!=', 'COMPLETED')->count(),
+         ];
 
         // ✅ Make index show the history, not the form
-        return view('scan.history', compact('scans'));
+        return view('scan.history', compact('scans', 'scanStats'));
+    }
+
+    public function history()
+    {
+        return $this->index();
     }
 
     public function create()
@@ -74,32 +86,38 @@ class SeoScanController extends Controller
             ->with('message', 'Scan submitted! Results will be available shortly.');
     }
 
-    public function results($id)
+    public function results($uuid)
     {
-        $scan = SeoScan::with('pages.links', 'pages.images')
-            ->where('id', $id)
+        $scan = SeoScan::where('uuid', $uuid)
             ->where('user_id', Auth::id())
             ->firstOrFail();
-        if (!$scan) {
-            return redirect()->back()->withErrors('Scan not found.');
-        }
-        $sitewideChecks = $this->checkSitewideSeoFiles($scan->pages->first()->url);
-        return view('scan.results', compact('scan', 'sitewideChecks'));
+
+        // Paginate Issues
+        $paginatedIssues = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
+                $q->where('seo_scan_id', $scan->id);
+            })
+            ->with('page') // Eager load page so we can show URL in issue list
+            ->orderByRaw("FIELD(severity, 'critical', 'error', 'warning', 'info')")
+            ->paginate(10, ['*'], 'issues_page');
+
+        // Paginate Pages
+        $paginatedPages = $scan->pages()
+            ->with(['issues', 'links', 'images']) // Eager load relations only for current page
+            ->paginate(10, ['*'], 'pages_page');
+        
+        // Sitewide checks
+        $sitewideChecks = [
+            'robots_txt' => $scan->has_robots_txt,
+            'sitemap_xml' => $scan->has_sitemap_xml,
+            'base_url' => parse_url($scan->url, PHP_URL_SCHEME) . '://' . parse_url($scan->url, PHP_URL_HOST)
+        ];
+
+        return view('scan.results', compact('scan', 'sitewideChecks', 'paginatedIssues', 'paginatedPages'));
     }
 
-    public function history()
+    public function destroy($uuid)
     {
-        $scans = SeoScan::where('user_id', Auth::id())
-            ->whereNull('deleted_at') // support soft deletes
-            ->latest()
-            ->paginate(10); // Optional: paginate results
-
-        return view('scan.history', compact('scans'));
-    }
-
-    public function destroy($id)
-    {
-        $scan = SeoScan::where('id', $id)
+        $scan = SeoScan::where('uuid', $uuid)
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
@@ -108,23 +126,27 @@ class SeoScanController extends Controller
         return redirect()->route('scan.history')->with('success', 'Scan deleted successfully.');
     }
 
-    public function exportPdf($id)
+    public function exportPdf($uuid)
     {
-        $scan = SeoScan::with('pages.links', 'pages.images')->findOrFail($id);
+        $scan = SeoScan::with(['pages.links', 'pages.images'])->where('uuid', $uuid)->firstOrFail();
+        
+        // Increase memory limit for PDF generation
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 120);
 
         $pdf = Pdf::loadView('exports.scan-pdf', compact('scan'));
-
-        return $pdf->download('seo-scan-' . $scan->id . '.pdf');
+        return $pdf->download('seo-scan-' . $scan->uuid . '.pdf');
     }
 
-    public function exportCsv($id)
+    public function exportCsv($uuid)
     {
-        return Excel::download(new SeoScanExport($id), 'seo-scan-' . $id . '.csv');
+        $scan = SeoScan::where('uuid', $uuid)->firstOrFail();
+        return Excel::download(new SeoScanExport($scan->id), 'seo-scan-' . $scan->uuid . '.csv');
     }
 
-    public function status($id)
+    public function status($uuid)
     {
-        $scan = SeoScan::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        $scan = SeoScan::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
         return view('scan.status', compact('scan'));
     }
 
