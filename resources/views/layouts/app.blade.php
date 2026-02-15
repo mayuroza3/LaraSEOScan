@@ -32,5 +32,16 @@
     <main class="py-4">
         @yield('content')
     </main>
+
+    <footer class="text-center py-4 text-muted border-top mt-auto bg-white">
+        <div class="container">
+            <small>&copy; {{ date('Y') }} LaraSEOScan. All rights reserved.</small>
+            <div class="mt-2 small">
+                <a href="{{ route('legal.privacy') }}" class="text-decoration-none text-muted mx-2">Privacy Policy</a>
+                <a href="{{ route('legal.terms') }}" class="text-decoration-none text-muted mx-2">Terms of Service</a>
+                <a href="{{ route('legal.cookies') }}" class="text-decoration-none text-muted mx-2">Cookie Policy</a>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

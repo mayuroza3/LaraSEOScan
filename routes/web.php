@@ -22,5 +22,11 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Legal Routes
+Route::view('/legal', 'legal.index')->name('legal.index');
+Route::view('/privacy-policy', 'legal.privacy')->name('legal.privacy');
+Route::view('/terms-of-service', 'legal.terms')->name('legal.terms');
+Route::view('/cookie-policy', 'legal.cookies')->name('legal.cookies');
+
 Route::get('/', fn () => view('welcome'))->name('home');
 require __DIR__.'/auth.php';

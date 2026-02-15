@@ -25,6 +25,12 @@
             <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-lg">
                 {{ $slot }}
             </div>
+
+            <div class="mt-4 text-center text-sm text-gray-500">
+                <a href="{{ route('legal.privacy') }}" class="underline hover:text-gray-900 mx-2">Privacy Policy</a>
+                <a href="{{ route('legal.terms') }}" class="underline hover:text-gray-900 mx-2">Terms of Service</a>
+                <a href="{{ route('legal.cookies') }}" class="underline hover:text-gray-900 mx-2">Cookie Policy</a>
+            </div>
         </div>
     </body>
 </html>
