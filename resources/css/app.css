@@ -177,3 +177,16 @@ label, .form-label {
 .text-green-600 {
     color: #10b981 !important;
 }
+
+/* Fix Tailwind CSS conflict with Bootstrap collapse */
+.collapse:not(.show) {
+    display: none !important;
+}
+
+.collapse {
+    visibility: visible !important;
+}
+
+.collapsing {
+    visibility: visible !important;
+}
