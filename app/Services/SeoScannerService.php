@@ -17,6 +17,7 @@ use App\Services\Seo\RobotsTxtService;
 use App\Services\Seo\SitemapService;
 use App\Services\Seo\KeywordDensityService;
 use GuzzleHttp\Promise\Utils;
+use Illuminate\Support\Facades\Log;
 
 class SeoScannerService
 {

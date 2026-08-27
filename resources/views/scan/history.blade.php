@@ -90,13 +90,12 @@
                         </thead>
                         <tbody>
                             @foreach ($scans as $scan)
-                                <tr>
+                                <tr class="position-relative">
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-light rounded p-2 me-3 border">
                                                 <i class="bi bi-globe2 text-secondary"></i>
                                             </div>
-                                            <div>
                                             <div>
                                                 <a href="{{ route('scan.results', $scan->uuid) }}" class="fw-bold text-dark text-decoration-none stretched-link">
                                                     {{ parse_url($scan->url, PHP_URL_HOST) ?? $scan->url }}
