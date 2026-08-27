@@ -144,7 +144,10 @@ function initIssuesPie() {
         },
         legend: {
             top: '5%',
-            left: 'center'
+            left: 'center',
+            textStyle: {
+                color: '#cbd5e1'
+            }
         },
         series: [
             {

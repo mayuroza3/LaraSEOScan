@@ -1,3 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Premium Dashboard Theme Custom Overrides */
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    --info-gradient: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+    --glass-bg: rgba(30, 41, 59, 0.45);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', 'Outfit', system-ui, -apple-system, sans-serif;
+    background-color: #0f172a; /* Slate-900 background */
+    color: #cbd5e1; /* Light slate text */
+    letter-spacing: -0.01em;
+}
+
+/* Glassmorphism Cards */
+.card {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(99, 102, 241, 0.25) !important;
+    transform: translateY(-2px);
+}
+
+/* Premium Buttons */
+.btn-primary, button[type="submit"].bg-gray-800 {
+    background: var(--primary-gradient) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.75rem 1.5rem !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35) !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.btn-primary:hover, button[type="submit"].bg-gray-800:hover {
+    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5) !important;
+    transform: translateY(-1px);
+    opacity: 0.95;
+}
+
+.btn-outline-primary {
+    border: 2px solid #6366f1 !important;
+    color: #6366f1 !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out !important;
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-gradient) !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+
+/* Tables Styling */
+.table {
+    border-collapse: separate !important;
+    border-spacing: 0 8px !important;
+}
+
+.table tbody tr, .table td {
+    background: rgba(30, 41, 59, 0.35) !important;
+    border: none !important;
+    border-color: rgba(255, 255, 255, 0.03) !important;
+    color: #cbd5e1 !important;
+    box-shadow: none !important;
+    transition: all 0.2s ease;
+}
+
+.table tbody tr {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 12px !important;
+}
+
+.table tbody tr:hover, .table tbody tr:hover td {
+    background: rgba(99, 102, 241, 0.08) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+.table td {
+    padding: 1.25rem 1rem !important;
+}
+
+.table th {
+    border: none !important;
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em;
+}
+
+/* Perfect square/circle icons to prevent oval shapes */
+.icon-box-md {
+    width: 44px;
+    height: 44px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 12px;
+}
+
+.icon-box-lg {
+    width: 80px;
+    height: 80px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+}
+
+/* Custom Text and Header Overrides (Forces Contrast in Profile/Forms) */
+h1, h2, h3, h4, h5, h6, 
+.text-gray-900, .text-gray-800 {
+    font-family: 'Outfit', sans-serif;
+    color: #ffffff !important; /* Force all headers to be clean high-contrast white */
+}
+
+p, .text-gray-600, .text-gray-500 {
+    color: #94a3b8 !important; /* Force descriptions to be readable slate-400 */
+}
+
+/* Form Fields Styling Override */
+input[type="text"], 
+input[type="email"], 
+input[type="password"], 
+input[type="url"], 
+select, 
+textarea {
+    background-color: rgba(15, 23, 42, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 0.65rem 1rem !important;
+    transition: all 0.2s ease-in-out;
+}
+
+input[type="text"]:focus, 
+input[type="email"]:focus, 
+input[type="password"]:focus, 
+input[type="url"]:focus, 
+select:focus, 
+textarea:focus {
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
+    background-color: rgba(15, 23, 42, 0.9) !important;
+    outline: none !important;
+}
+
+/* Labels */
+label, .form-label {
+    color: #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+
+/* Success Saved text */
+.text-green-600 {
+    color: #10b981 !important;
+}
