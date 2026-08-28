@@ -44,65 +44,131 @@ class SeoScanController extends Controller
 
     public function scan(StoreScanRequest $request)
     {
-
         $validated = $request->validated();
         $url = $validated['url'];
-
 
         // Check if the user is logged in
         $user = Auth::user();
 
-        // Check if the user has exceeded the daily limit
-        $todayScanCount = SeoScan::where('user_id', $user->id)
-            ->whereDate('created_at', Carbon::today())
-            ->count();
+        if ($user) {
+            // Check if the user has exceeded the daily limit
+            $todayScanCount = SeoScan::where('user_id', $user->id)
+                ->whereDate('created_at', Carbon::today())
+                ->count();
 
-        if ($todayScanCount >= 100) {
-            return redirect()->back()->withErrors([
-                'limit' => '🚫 You have reached your daily scan limit of 5. Please try again tomorrow.',
-            ]);
+            if ($todayScanCount >= 100) {
+                return redirect()->back()->withErrors([
+                    'limit' => '🚫 You have reached your daily scan limit. Please try again tomorrow.',
+                ]);
+            }
         }
 
         $sitewideChecks = $this->checkSitewideSeoFiles($request->url);
 
         // Create a scan entry
         $scan = SeoScan::create([
-            'user_id' => $user->id,
+            'user_id' => $user ? $user->id : null,
             'url' => $request->url,
             'status' => 'QUEUED',
+            'type' => $request->type ?? null,
             'has_robots_txt' => $sitewideChecks['robots_txt'],
             'has_sitemap_xml' => $sitewideChecks['sitemap_xml'],
         ]);
 
-        // // Run scan via service class
-        // $scanner = new SeoScannerService();
-        // $scanner->scan($scan);
-
-        // return redirect()->route('scan.results', $scan->id);
-
         // Make Jobs to run this SEO Scores
         ProcessSeoScan::dispatch($scan);
+
+        if (!$user) {
+            session(['guest_scan_uuid' => $scan->uuid]);
+            return redirect()->route('scan.results', $scan->uuid)
+                ->with('message', 'Scan started! This page will refresh automatically.');
+        }
+
         return redirect()->route('scan.history')
             ->with('message', 'Scan submitted! Results will be available shortly.');
     }
 
     public function results($uuid)
     {
-        $scan = SeoScan::where('uuid', $uuid)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
+        $scan = SeoScan::where('uuid', $uuid)->firstOrFail();
+
+        // If the scan belongs to a user, make sure current user owns it
+        if ($scan->user_id !== null) {
+            if (!Auth::check() || Auth::id() !== $scan->user_id) {
+                abort(403, 'Unauthorized action.');
+            }
+        }
+
+        // Define type rules mapping
+        $typeRules = [];
+        $titlePrefix = 'SEO Audit Report';
+
+        if ($scan->type) {
+            switch ($scan->type) {
+                case 'meta-tag-checker':
+                    $typeRules = ['meta.title', 'meta.description', 'og.basic_presence'];
+                    $titlePrefix = 'Meta Tag Audit';
+                    break;
+                case 'meta-description-checker':
+                    $typeRules = ['meta.description'];
+                    $titlePrefix = 'Meta Description Audit';
+                    break;
+                case 'title-tag-checker':
+                    $typeRules = ['meta.title'];
+                    $titlePrefix = 'Title Tag Audit';
+                    break;
+                case 'h1-checker':
+                    $typeRules = ['content.h1_count'];
+                    $titlePrefix = 'H1 Header Tag Audit';
+                    break;
+                case 'broken-link-checker':
+                    $typeRules = ['links.broken'];
+                    $titlePrefix = 'Broken Link Audit';
+                    break;
+                case 'robots-txt-checker':
+                    $typeRules = ['robots.missing_page'];
+                    $titlePrefix = 'Robots.txt Crawl Audit';
+                    break;
+                case 'sitemap-checker':
+                    $typeRules = ['sitemap.missing_page'];
+                    $titlePrefix = 'XML Sitemap Audit';
+                    break;
+                case 'schema-markup-checker':
+                    $typeRules = ['structured.jsonld'];
+                    $titlePrefix = 'Schema Markup Validation';
+                    break;
+                case 'open-graph-checker':
+                    $typeRules = ['og.basic_presence'];
+                    $titlePrefix = 'Open Graph Verification';
+                    break;
+                case 'image-seo-checker':
+                    $typeRules = ['image.optimization', 'image.no_lazy_loading', 'image.unoptimized_format', 'image.large_size'];
+                    $titlePrefix = 'Image Optimization Audit';
+                    break;
+            }
+        }
+
+        // Base Query
+        $issuesQuery = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
+                $q->where('seo_scan_id', $scan->id);
+            });
+
+        if (!empty($typeRules)) {
+            $issuesQuery->whereIn('rule_key', $typeRules);
+        }
 
         // Paginate Issues
-        $paginatedIssues = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
-                $q->where('seo_scan_id', $scan->id);
-            })
-            ->with('page') // Eager load page so we can show URL in issue list
+        $paginatedIssues = $issuesQuery->with('page')
             ->orderByRaw("FIELD(severity, 'critical', 'error', 'warning', 'info')")
             ->paginate(10, ['*'], 'issues_page');
 
         // Paginate Pages
         $paginatedPages = $scan->pages()
-            ->with(['issues', 'links', 'images']) // Eager load relations only for current page
+            ->with(['issues' => function ($q) use ($typeRules) {
+                if (!empty($typeRules)) {
+                    $q->whereIn('rule_key', $typeRules);
+                }
+            }, 'links', 'images'])
             ->paginate(10, ['*'], 'pages_page');
         
         // Sitewide checks
@@ -112,7 +178,7 @@ class SeoScanController extends Controller
             'base_url' => parse_url($scan->url, PHP_URL_SCHEME) . '://' . parse_url($scan->url, PHP_URL_HOST)
         ];
 
-        return view('scan.results', compact('scan', 'sitewideChecks', 'paginatedIssues', 'paginatedPages'));
+        return view('scan.results', compact('scan', 'sitewideChecks', 'paginatedIssues', 'paginatedPages', 'typeRules', 'titlePrefix'));
     }
 
     public function destroy($uuid)

@@ -7,7 +7,6 @@
 
     <title>LaraSEOScan - Open Source SEO Audit Tool Built for Laravel</title>
     <meta name="description" content="LaraSEOScan is a powerful, self-hosted SEO crawler built on Laravel. Audit your website, detect broken links, analyze performance, and improve rankings with actionable insights.">
-    <meta name="keywords" content="SEO audit tool, SEO crawler, technical SEO audit, broken link checker, website SEO analyzer, Laravel SEO tool, open source SEO audit, php seo scraper">
     <link rel="canonical" href="{{ url('/') }}">
 
     <!-- Open Graph / Facebook -->
@@ -107,19 +106,17 @@
                     <p class="lead text-secondary mb-5">
                         Crawl your website, detect critical SEO issues, analyze performance, and improve your rankings — all from your own secure, self-hosted dashboard.
                     </p>
-                    <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start">
-                        @auth
-                            <a href="{{ route('scan.create') }}" class="btn btn-primary-gradient btn-lg shadow-lg">
-                                <i class="bi bi-play-circle-fill me-2"></i> Start Free Audit
-                            </a>
-                        @else
-                            <a href="{{ route('register') }}" class="btn btn-primary-gradient btn-lg shadow-lg">
-                                <i class="bi bi-play-circle-fill me-2"></i> Start Free Audit
-                            </a>
-                            <a href="{{ route('login') }}" class="btn btn-outline-dark btn-lg">
-                                <i class="bi bi-box-arrow-in-right me-2"></i> Login
-                            </a>
-                        @endauth
+                    <div class="mt-2">
+                        <form method="POST" action="{{ route('scan.submit') }}">
+                            @csrf
+                            <div class="input-group input-group-lg shadow-sm border rounded-pill overflow-hidden p-1 bg-white mb-2" style="max-width: 520px; border-color: rgba(99, 102, 241, 0.2) !important;">
+                                <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-globe2"></i></span>
+                                <input type="url" class="form-control border-0 bg-white" name="url" placeholder="https://example.com" required style="outline: none; box-shadow: none; font-size: 1rem;">
+                                <button type="submit" class="btn btn-primary px-4 rounded-pill fw-semibold" style="box-shadow: none !important;">
+                                    Scan Website Free
+                                </button>
+                            </div>
+                        </form>
                     </div>
                     <div class="mt-4 text-muted small">
                         <i class="bi bi-check-circle-fill text-success me-1"></i> No credit card required &nbsp;&bull;&nbsp; 

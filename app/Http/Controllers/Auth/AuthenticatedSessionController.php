@@ -28,6 +28,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $scanUuid = $request->input('scan_uuid') ?: session('guest_scan_uuid');
+        if ($scanUuid) {
+            $scan = \App\Models\SeoScan::where('uuid', $scanUuid)->whereNull('user_id')->first();
+            if ($scan) {
+                $scan->update(['user_id' => Auth::id()]);
+            }
+            session()->forget('guest_scan_uuid');
+            return redirect(route('scan.results', ['uuid' => $scanUuid]));
+        }
+
         return redirect()->intended(route('scan.history', absolute: false));
     }
 

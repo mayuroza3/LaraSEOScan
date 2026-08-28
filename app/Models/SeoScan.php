@@ -11,7 +11,7 @@ class SeoScan extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['url', 'status','user_id','has_robots_txt', 'has_sitemap_xml','user_id', 'uuid'];
+    protected $fillable = ['url', 'status', 'user_id', 'has_robots_txt', 'has_sitemap_xml', 'uuid', 'type'];
 
     protected static function booted()
     {

@@ -6,21 +6,19 @@
     @php
         $totalPages = $scan->pages()->count(); 
         
-        $totalIssues = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
+        $statsQuery = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
                 $q->where('seo_scan_id', $scan->id);
-            })->count();
-        $critical = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
-                $q->where('seo_scan_id', $scan->id);
-            })->where('severity', 'critical')->count();
-        $error = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
-                $q->where('seo_scan_id', $scan->id);
-            })->where('severity', 'error')->count();
-        $warning = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
-                $q->where('seo_scan_id', $scan->id);
-            })->where('severity', 'warning')->count();
-        $info = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
-                $q->where('seo_scan_id', $scan->id);
-            })->where('severity', 'info')->count();
+            });
+
+        if (!empty($typeRules)) {
+            $statsQuery->whereIn('rule_key', $typeRules);
+        }
+
+        $totalIssues = (clone $statsQuery)->count();
+        $critical = (clone $statsQuery)->where('severity', 'critical')->count();
+        $error = (clone $statsQuery)->where('severity', 'error')->count();
+        $warning = (clone $statsQuery)->where('severity', 'warning')->count();
+        $info = (clone $statsQuery)->where('severity', 'info')->count();
         
         $brokenLinks = \App\Models\SeoIssue::whereHas('page', function($q) use ($scan) {
                 $q->where('seo_scan_id', $scan->id);
@@ -43,7 +41,7 @@
         <!-- Header -->
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-5">
             <div>
-                <h2 class="fw-bold mb-1 text-white">SEO Audit Report</h2>
+                <h2 class="fw-bold mb-1 text-white">{{ $titlePrefix ?? 'SEO Audit Report' }}</h2>
                 <p class="text-muted mb-0">
                     Target: <a href="{{ $scan->url }}" target="_blank" class="text-decoration-none text-primary fw-medium">{{ $scan->url }}</a>
                     <span class="mx-2 text-secondary">•</span>
@@ -59,6 +57,22 @@
                 </a>
             </div>
         </div>
+
+        @if($scan->user_id === null)
+            <div class="card border-0 p-4 mb-5 shadow" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%) !important; border: 1px solid rgba(99, 102, 241, 0.3) !important;">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <h4 class="fw-bold text-white mb-1"><i class="bi bi-gift-fill text-warning me-2"></i> Save This SEO Audit Report</h4>
+                        <p class="text-light mb-0 opacity-75">Create a free account to permanently save this report, monitor improvements, and unlock unlimited scans.</p>
+                    </div>
+                    <div>
+                        <a href="{{ route('register', ['scan_uuid' => $scan->uuid]) }}" class="btn btn-primary btn-lg shadow-lg">
+                            <i class="bi bi-shield-check me-2"></i> Save Report Free
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
 
         <!-- Metric Cards & Visual Gauges -->
         <div class="row g-4 mb-5">
@@ -110,6 +124,56 @@
                 </div>
             </div>
         </div>
+
+        @php
+            $firstPage = $scan->pages()->first();
+        @endphp
+        @if($firstPage)
+            <div class="card border-0 p-4 mb-5 shadow bg-secondary bg-opacity-5">
+                <h5 class="fw-bold text-white mb-3"><i class="bi bi-google text-danger me-2"></i> Google Search Snippet Preview</h5>
+                
+                <div class="p-4 rounded-4 mb-3 border border-secondary border-opacity-10" style="max-width: 650px; font-family: arial, sans-serif; background: #202124 !important;">
+                    <!-- URL path -->
+                    <div class="text-truncate" style="font-size: 14px; color: #bdc1c6; line-height: 1.3; margin-bottom: 4px;">
+                        {{ parse_url($firstPage->url, PHP_URL_HOST) }} 
+                        <span style="color: #bdc1c6;"> &rsaquo; </span> 
+                        {{ ltrim(parse_url($firstPage->url, PHP_URL_PATH), '/') ?: 'index' }}
+                    </div>
+                    <!-- Title link -->
+                    <h3 class="text-truncate mb-1" style="font-size: 20px; color: #8ab4f8; font-weight: normal; line-height: 1.3; cursor: pointer;">
+                        {{ $firstPage->title ?? 'No Title Tag Found' }}
+                    </h3>
+                    <!-- Description snippet -->
+                    <div style="font-size: 14px; color: #bdc1c6; line-height: 1.57; word-wrap: break-word;">
+                        {{ $firstPage->description ?? 'Please write a meta description to introduce this page to searchers.' }}
+                    </div>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-10 text-white">
+                            <div class="small text-muted mb-1">Title Tag Length</div>
+                            <strong>{{ strlen($firstPage->title ?? '') }} characters</strong> 
+                            <span class="ms-2 badge {{ strlen($firstPage->title ?? '') >= 30 && strlen($firstPage->title ?? '') <= 60 ? 'bg-success' : 'bg-warning' }} bg-opacity-10 text-{{ strlen($firstPage->title ?? '') >= 30 && strlen($firstPage->title ?? '') <= 60 ? 'success' : 'warning' }}">
+                                {{ strlen($firstPage->title ?? '') >= 30 && strlen($firstPage->title ?? '') <= 60 ? 'Optimal (30-60)' : 'Concise & descriptive recommended' }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-secondary bg-opacity-10 border border-secondary border-opacity-10 text-white">
+                            <div class="small text-muted mb-1">Meta Description Length</div>
+                            <strong>{{ strlen($firstPage->description ?? '') }} characters</strong>
+                            <span class="ms-2 badge {{ strlen($firstPage->description ?? '') >= 50 && strlen($firstPage->description ?? '') <= 160 ? 'bg-success' : 'bg-warning' }} bg-opacity-10 text-{{ strlen($firstPage->description ?? '') >= 50 && strlen($firstPage->description ?? '') <= 160 ? 'success' : 'warning' }}">
+                                {{ strlen($firstPage->description ?? '') >= 50 && strlen($firstPage->description ?? '') <= 160 ? 'Optimal (50-160)' : 'Concise & descriptive recommended' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-text mt-3 text-muted">
+                    <i class="bi bi-info-circle me-1"></i> Note: Google dynamically determines search snippets based on user queries and index resources. Use pixel values and formats as recommended guidelines, not absolute ranking rules.
+                </div>
+            </div>
+        @endif
 
         <!-- Critical Issue breakdown -->
         <div class="row g-4 mb-5">

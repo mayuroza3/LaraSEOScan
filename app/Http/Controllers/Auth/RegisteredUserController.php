@@ -49,6 +49,16 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        $scanUuid = $request->input('scan_uuid') ?: session('guest_scan_uuid');
+        if ($scanUuid) {
+            $scan = \App\Models\SeoScan::where('uuid', $scanUuid)->whereNull('user_id')->first();
+            if ($scan) {
+                $scan->update(['user_id' => $user->id]);
+            }
+            session()->forget('guest_scan_uuid');
+            return redirect(route('scan.results', ['uuid' => $scanUuid]));
+        }
+
         return redirect(route('scan.history', absolute: false));
     }
 }

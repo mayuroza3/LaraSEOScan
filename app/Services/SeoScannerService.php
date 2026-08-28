@@ -43,6 +43,12 @@ class SeoScannerService
 
     public function scan(SeoScan $scan)
     {
+        // Restrict to single page if it's a specific landing tool
+        if ($scan->type && !in_array($scan->type, ['seo-checker', 'free-seo-checker', 'website-seo-checker'])) {
+            $this->maxDepth = 0;
+            $this->maxPages = 1;
+        }
+
         // $this->crawlAndScan($scan->url, $scan);
         $this->crawlBatch([$scan->url], $scan, 0);
 
