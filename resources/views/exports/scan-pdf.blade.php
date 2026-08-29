@@ -41,6 +41,11 @@
 
 <body>
 
+    <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #0d6efd; padding-bottom: 15px;">
+        <h1 style="color: #0d6efd; margin: 0; font-size: 22px;">LaraSEOScan</h1>
+        <p style="color: #6c757d; font-size: 10px; margin: 4px 0 0 0; letter-spacing: 2px; text-transform: uppercase;">CRAWL &bull; ANALYZE &bull; IMPROVE</p>
+    </div>
+
     <h2>SEO Scan Report</h2>
     <p><strong>URL:</strong> {{ $scan->url }}</p>
     <p><strong>Date:</strong> {{ $scan->created_at }}</p>

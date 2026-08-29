@@ -30,8 +30,20 @@ Scan a given URL, and get a detailed report of its:
 
 ## 🚀 Demo
 
-<img src="screenshots/form.png" width="600" alt="URL input form" />
-<img src="screenshots/results.png" width="600" alt="SEO results page" />
+### 1. Homepage UI
+<img src="screenshots/homepage.png" width="800" alt="LaraSEOScan Homepage" />
+
+### 2. SEO Tools Hub Listing
+<img src="screenshots/seo_tools.png" width="800" alt="SEO Tools Hub Listing" />
+
+### 3. Login Interface
+<img src="screenshots/login.png" width="800" alt="Login Interface" />
+
+### 4. User Dashboard
+<img src="screenshots/dashboard.png" width="800" alt="User Dashboard with mayuroza.com scan history" />
+
+### 5. Detailed Scan Results (mayuroza.com)
+<img src="screenshots/results.png" width="800" alt="SEO Scan Results for mayuroza.com" />
 
 ---
 

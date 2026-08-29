@@ -12,8 +12,12 @@ class H1Rule implements SeoRule
     public function check(SeoPage $page, \DOMDocument $dom, \DOMXPath $xpath): array
     {
         $issues = [];
-        $h1s = $xpath->query('//h1');
-        $count = $h1s->length;
+        $headings = $page->headings ?? [];
+
+        $h1s = array_filter($headings, function ($h) {
+            return strtolower($h['tag'] ?? '') === 'h1';
+        });
+        $count = count($h1s);
 
         if ($count === 0) {
             $issues[] = [
@@ -33,10 +37,10 @@ class H1Rule implements SeoRule
             ];
         }
 
-        $headingNodes = $xpath->query('//h1|//h2|//h3');
+        // Heading hierarchy check
         $prev = null;
-        foreach ($headingNodes as $node) {
-            $tag = strtolower($node->nodeName);
+        foreach ($headings as $h) {
+            $tag = strtolower($h['tag'] ?? '');
             if ($tag === 'h3' && $prev === null) {
                 $issues[] = [
                     'rule' => 'content.heading_hierarchy',

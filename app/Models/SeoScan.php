@@ -33,6 +33,26 @@ class SeoScan extends Model
             ->whereDate('created_at', now()->toDateString());
     }
 
+    public function getDomainAttribute()
+    {
+        return parse_url($this->url, PHP_URL_HOST) ?? $this->url;
+    }
+
+    public function getScoreAttribute()
+    {
+        $issues = \App\Models\SeoIssue::whereHas('page', function ($q) {
+            $q->where('seo_scan_id', $this->id);
+        })->get();
+
+        $critical = $issues->where('severity', 'critical')->count();
+        $errors = $issues->where('severity', 'error')->count();
+        $warnings = $issues->where('severity', 'warning')->count();
+
+        // 100 is base score. Deduct weights.
+        $score = 100 - ($critical * 15) - ($errors * 8) - ($warnings * 1);
+        return max(0, min(100, $score));
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -24,11 +24,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
+        // Capture session details before regeneration clears them
+        $scanUuid = $request->input('scan_uuid') ?: session('guest_scan_uuid');
+
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        $scanUuid = $request->input('scan_uuid') ?: session('guest_scan_uuid');
         if ($scanUuid) {
             $scan = \App\Models\SeoScan::where('uuid', $scanUuid)->whereNull('user_id')->first();
             if ($scan) {

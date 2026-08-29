@@ -253,7 +253,7 @@ class SeoScannerService
                 foreach ($issues as $issue) {
                     SeoIssue::create([
                         'seo_page_id' => $page->id,
-                        'rule_key'    => $rule->key(),
+                        'rule_key'    => $issue['rule'] ?? $rule->key(),
                         'severity'    => $issue['severity'] ?? 'info',
                         'message'     => $issue['message'] ?? 'Unknown issue',
                         'selector'    => $issue['selector'] ?? null,

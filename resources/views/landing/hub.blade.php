@@ -15,7 +15,10 @@
     
     <!-- Welcome Header -->
     <div class="text-center mb-5">
-        <h1 class="fw-bold mt-2 text-white">Free SEO Tools Hub</h1>
+        <div class="rounded-4 overflow-hidden mx-auto mb-4" style="max-width: 600px; max-height: 200px; border: 1px solid var(--border-default);">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="Technical SEO Audit Tools Directory" class="w-100" style="height: 180px; object-fit: cover;">
+        </div>
+        <h1 class="fw-bold mt-2 text-dark">Free SEO Tools Hub</h1>
         <p class="text-muted fs-5 mx-auto" style="max-width: 600px;">Optimize your site's search presence with our specialized technical analyzers. No registration, no installation — just paste your link and check.</p>
     </div>
 
@@ -28,7 +31,7 @@
                         <div class="bg-primary bg-opacity-10 border border-primary border-opacity-10 rounded-3 icon-box-md me-3">
                             <i class="bi {{ $tool['icon'] }} fs-4 text-primary"></i>
                         </div>
-                        <h4 class="text-white fw-bold mb-0" style="font-size: 1.15rem;">{{ $tool['header'] }}</h4>
+                        <h4 class="text-dark fw-bold mb-0" style="font-size: 1.15rem;">{{ $tool['header'] }}</h4>
                     </div>
                     <p class="text-muted small mb-4" style="flex-grow: 1;">{{ $tool['meta_description'] }}</p>
                     <div class="d-grid">

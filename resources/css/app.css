@@ -4,32 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Premium "SEO Intelligence Console" Theme Overrides */
+/* Premium Light "SEO Intelligence Console" Theme Overrides matching Homepage */
 
 :root {
-    --bg-page: #0B1220;
-    --bg-surface-1: #101A2C;
-    --bg-surface-2: #162238;
-    --bg-surface-3: #1D2B48;
-    
-    --border-default: #24324A;
-    --border-active: #3B4B6A;
-    
-    --brand-indigo: #6366F1;
-    --brand-purple: #7C3AED;
-    --brand-cyan: #22D3EE;
-    
-    --status-success: #22C55E;
-    --status-warning: #F59E0B;
-    --status-critical: #EF4444;
-    --status-info: #38BDF8;
-    
-    --text-primary: #F8FAFC;
-    --text-secondary: #CBD5E1;
-    --text-muted: #94A3B8;
-    
-    --primary-gradient: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-    --glass-bg: rgba(16, 26, 44, 0.65);
+    --bg-page: #ffffff;
+    --bg-surface-1: #f8f9fa;
+    --bg-surface-2: #f1f3f5;
+    --bg-surface-3: #e9ecef;
+
+    --border-default: rgba(0, 0, 0, 0.08);
+    --border-active: rgba(13, 110, 253, 0.25);
+
+    --brand-primary: #0d6efd;
+    --brand-indigo: #0d6efd;
+    --brand-purple: #6610f2;
+    --brand-cyan: #0dcaf0;
+
+    --status-success: #198754;
+    --status-warning: #ffc107;
+    --status-critical: #dc3545;
+    --status-info: #0dcaf0;
+
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-muted: #6c757d;
+
+    --primary-gradient: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-purple) 100%);
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    --card-shadow-hover: 0 10px 30px rgba(13, 110, 253, 0.08);
 }
 
 body {
@@ -37,6 +39,51 @@ body {
     background-color: var(--bg-page);
     color: var(--text-secondary);
     letter-spacing: -0.01em;
+}
+
+/* Fix low contrast heading colors in dark/colored sections */
+.text-white h1,
+.text-white h2,
+.text-white h3,
+.text-white h4,
+.text-white h5,
+.text-white h6,
+.bg-dark h1,
+.bg-dark h2,
+.bg-dark h3,
+.bg-dark h4,
+.bg-dark h5,
+.bg-dark h6,
+.bg-primary h1,
+.bg-primary h2,
+.bg-primary h3,
+.bg-primary h4,
+.bg-primary h5,
+.bg-primary h6,
+.bg-primary-gradient h1,
+.bg-primary-gradient h2,
+.bg-primary-gradient h3,
+.bg-primary-gradient h4,
+.bg-primary-gradient h5,
+.bg-primary-gradient h6 {
+    color: inherit !important;
+}
+
+/* Fix low contrast paragraph colors in dark/colored sections */
+.text-white p,
+.bg-dark p,
+.bg-primary p,
+.bg-primary-gradient p,
+.text-white-50,
+.text-white p.text-muted,
+.bg-dark p.text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Improve text readability in light background cards */
+.bg-secondary.bg-opacity-5 p,
+.bg-secondary.bg-opacity-5 .text-muted {
+    color: #e5e9ed !important;
 }
 
 /* Typography Scales */
@@ -80,36 +127,37 @@ p {
 
 /* Clean Cards System */
 .card {
-    background: var(--glass-bg) !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: #ffffff !important;
     border: 1px solid var(--border-default) !important;
     border-radius: 16px !important;
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
+    box-shadow: var(--card-shadow) !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .card:hover {
-    box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.15) !important;
+    box-shadow: var(--card-shadow-hover) !important;
     border-color: var(--border-active) !important;
     transform: translateY(-1px);
 }
 
 /* Premium Buttons */
-.btn-primary, button[type="submit"].bg-gray-800 {
+.btn-primary,
+button[type="submit"].bg-gray-800 {
     background: var(--primary-gradient) !important;
     border: none !important;
     border-radius: 10px !important;
     padding: 0.75rem 1.5rem !important;
     font-weight: 600 !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 4px 14px 0 rgba(13, 110, 253, 0.25) !important;
     transition: all 0.2s ease-in-out !important;
 }
 
-.btn-primary:hover, button[type="submit"].bg-gray-800:hover {
-    box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.5) !important;
+.btn-primary:hover,
+button[type="submit"].bg-gray-800:hover {
+    box-shadow: 0 6px 20px 0 rgba(13, 110, 253, 0.4) !important;
     transform: translateY(-1px);
+    color: #ffffff !important;
 }
 
 .btn-outline-primary {
@@ -132,22 +180,35 @@ p {
     border-spacing: 0 8px !important;
 }
 
-.table tbody tr, .table td {
-    background: var(--bg-surface-1) !important;
-    border: none !important;
-    border-color: var(--border-default) !important;
+.table tbody tr,
+.table td {
+    background: #ffffff !important;
+    border: 1px solid var(--border-default) !important;
+    border-width: 1px 0 !important;
     color: var(--text-secondary) !important;
     box-shadow: none !important;
     transition: all 0.2s ease;
 }
 
 .table tbody tr {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-    border-radius: 12px !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02) !important;
 }
 
-.table tbody tr:hover, .table tbody tr:hover td {
-    background: var(--bg-surface-2) !important;
+.table tbody tr td:first-child {
+    border-left-width: 1px !important;
+    border-top-left-radius: 12px !important;
+    border-bottom-left-radius: 12px !important;
+}
+
+.table tbody tr td:last-child {
+    border-right-width: 1px !important;
+    border-top-right-radius: 12px !important;
+    border-bottom-right-radius: 12px !important;
+}
+
+.table tbody tr:hover,
+.table tbody tr:hover td {
+    background: var(--bg-surface-1) !important;
     border-color: var(--border-active) !important;
 }
 
@@ -184,13 +245,13 @@ p {
 }
 
 /* Form Fields Styling Override */
-input[type="text"], 
-input[type="email"], 
-input[type="password"], 
-input[type="url"], 
-select, 
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+select,
 textarea {
-    background-color: var(--bg-surface-1) !important;
+    background-color: #ffffff !important;
     border: 1px solid var(--border-default) !important;
     color: var(--text-primary) !important;
     border-radius: 10px !important;
@@ -198,20 +259,21 @@ textarea {
     transition: all 0.2s ease-in-out;
 }
 
-input[type="text"]:focus, 
-input[type="email"]:focus, 
-input[type="password"]:focus, 
-input[type="url"]:focus, 
-select:focus, 
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="url"]:focus,
+select:focus,
 textarea:focus {
     border-color: var(--brand-indigo) !important;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25) !important;
-    background-color: var(--bg-surface-2) !important;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.1) !important;
+    background-color: #ffffff !important;
     outline: none !important;
 }
 
 /* Labels */
-label, .form-label {
+label,
+.form-label {
     color: var(--text-secondary) !important;
     font-weight: 600 !important;
 }
@@ -248,13 +310,43 @@ label, .form-label {
 }
 
 .directory-link:hover {
-    color: var(--text-primary) !important;
-    background: rgba(255, 255, 255, 0.02);
+    color: var(--brand-primary) !important;
+    background: rgba(13, 110, 253, 0.03);
 }
 
 .directory-link.active {
-    color: var(--brand-cyan) !important;
+    color: var(--brand-primary) !important;
     font-weight: 600;
-    border-left: 3px solid var(--brand-cyan);
-    background: rgba(34, 211, 238, 0.04);
+    border-left: 3px solid var(--brand-primary);
+    background: rgba(13, 110, 253, 0.05);
+}
+
+/* Custom Premium Scrollbars */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Firefox compatibility */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+/* Disable dual arrow on Bootstrap dropdown toggle link */
+.dropdown-toggle::after {
+    display: none !important;
 }

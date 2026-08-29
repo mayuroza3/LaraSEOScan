@@ -118,7 +118,7 @@ class SeoScanController extends Controller
                     $titlePrefix = 'Title Tag Audit';
                     break;
                 case 'h1-checker':
-                    $typeRules = ['content.h1_count'];
+                    $typeRules = ['content.h1_count', 'content.heading_hierarchy'];
                     $titlePrefix = 'H1 Header Tag Audit';
                     break;
                 case 'broken-link-checker':
@@ -214,6 +214,12 @@ class SeoScanController extends Controller
     {
         $scan = SeoScan::where('uuid', $uuid)->where('user_id', Auth::id())->firstOrFail();
         return view('scan.status', compact('scan'));
+    }
+
+    public function statusCheck($uuid)
+    {
+        $scan = SeoScan::where('uuid', $uuid)->firstOrFail();
+        return response()->json(['status' => $scan->status]);
     }
 
     // 👇 Define this helper method within the controller class

@@ -11,6 +11,7 @@ Route::redirect('/dashboard', '/scan/history')->name('dashboard');
 Route::get('/scan', [SeoScanController::class, 'create'])->name('scan.create');
 Route::post('/scan', [SeoScanController::class, 'scan'])->middleware('throttle:10,1')->name('scan.submit');
 Route::get('/results/{uuid}', [SeoScanController::class, 'results'])->name('scan.results');
+Route::get('/results/{uuid}/status-check', [SeoScanController::class, 'statusCheck'])->name('scan.status-check');
 
 // Auth Protected Routes
 Route::middleware('auth')->group(function () {

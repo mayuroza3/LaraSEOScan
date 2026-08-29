@@ -9,6 +9,7 @@
     <meta name="description" content="@yield('meta_description', 'LaraSEOScan Legal Information')">
     <meta name="robots" content="index,follow">
     <link rel="canonical" href="{{ url()->current() }}">
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo-icon.jpg') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -25,8 +26,8 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm py-3">
         <div class="container">
-            <a class="navbar-brand fw-bold text-primary d-flex align-items-center" href="{{ url('/') }}">
-                <i class="bi bi-bar-chart-fill me-2 fs-4"></i> LaraSEOScan
+            <a class="navbar-brand d-flex align-items-center" href="{{ url('/') }}">
+                <img src="{{ asset('images/logo-full.png') }}" alt="LaraSEOScan - Document Center Logo" style="height: 40px; width: auto;" height="40">
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -67,8 +68,8 @@
         <div class="container">
             <div class="row gy-4">
                 <div class="col-lg-4">
-                    <a class="navbar-brand fw-bold text-primary d-flex align-items-center mb-3" href="{{ url('/') }}">
-                        <i class="bi bi-bar-chart-fill me-2 fs-4"></i> LaraSEOScan
+                    <a class="navbar-brand d-flex align-items-center mb-3" href="{{ url('/') }}">
+                        <img src="{{ asset('images/logo-full.png') }}" alt="LaraSEOScan - Document Footer Logo" style="height: 40px; width: auto;" height="40">
                     </a>
                     <p class="text-muted small">
                         LaraSEOScan is an open-source SEO crawling tool designed for modern web development teams.

@@ -29,6 +29,9 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Capture session details before regeneration clears them
+        $scanUuid = $request->input('scan_uuid') ?: session('guest_scan_uuid');
+
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
@@ -49,7 +52,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        $scanUuid = $request->input('scan_uuid') ?: session('guest_scan_uuid');
         if ($scanUuid) {
             $scan = \App\Models\SeoScan::where('uuid', $scanUuid)->whereNull('user_id')->first();
             if ($scan) {
