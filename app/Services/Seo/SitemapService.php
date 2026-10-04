@@ -5,6 +5,7 @@ namespace App\Services\Seo;
 use Illuminate\Support\Facades\Http;
 use SimpleXMLElement;
 use Illuminate\Support\Str;
+use App\Services\Seo\SafeUrlService;
 
 class SitemapService
 {
@@ -31,6 +32,10 @@ class SitemapService
     protected function parseSitemap(string $url): void
     {
         try {
+            if (!SafeUrlService::isSafeUrl($url)) {
+                return;
+            }
+
             $response = Http::timeout(10)->get($url);
             if (!$response->successful()) {
                 return;

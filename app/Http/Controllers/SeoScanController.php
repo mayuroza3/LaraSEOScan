@@ -159,7 +159,7 @@ class SeoScanController extends Controller
 
         // Paginate Issues
         $paginatedIssues = $issuesQuery->with('page')
-            ->orderByRaw("FIELD(severity, 'critical', 'error', 'warning', 'info')")
+            ->orderByRaw("CASE severity WHEN 'critical' THEN 1 WHEN 'error' THEN 2 WHEN 'high' THEN 3 WHEN 'warning' THEN 4 WHEN 'medium' THEN 5 WHEN 'info' THEN 6 ELSE 7 END")
             ->paginate(10, ['*'], 'issues_page');
 
         // Paginate Pages

@@ -3,25 +3,28 @@
 @section('title', 'SEO Audit Report | LaraSEOScan')
 
 @php
-    $score = $scan->score;
+    $homepage = $scan->pages->where('url', $scan->url)->first() ?? $scan->pages->first();
+    $homepageIssues = $homepage ? $homepage->issues : collect();
+
+    // First Fold: Homepage Issue Severity Counts (for Score Gauge & Issue Distribution Chart)
+    $critical = $homepageIssues->where('severity', 'critical')->count();
+    $error = $homepageIssues->where('severity', 'error')->count();
+    $warning = $homepageIssues->where('severity', 'warning')->count();
+    $info = $homepageIssues->where('severity', 'info')->count();
+
+    // First Fold: Homepage Score
+    $score = $scan->calculateScore();
     
-    // Issue severity counts
-    $critical = $scan->pages->flatMap->issues->where('severity', 'critical')->count();
-    $error = $scan->pages->flatMap->issues->where('severity', 'error')->count();
-    $warning = $scan->pages->flatMap->issues->where('severity', 'warning')->count();
-    $info = $scan->pages->flatMap->issues->where('severity', 'info')->count();
-    
-    $totalIssues = $critical + $error + $warning + $info;
+    // Sitewide aggregates (for Site Status Card)
+    $totalIssues = $scan->pages->flatMap->issues->count();
     $totalPages = $scan->pages->count();
+    $brokenLinks = $scan->pages->flatMap->links->where('status_code', 404)->count();
     
     // Sitemap/Robots checks (sitewide)
     $sitewideChecks = [
-        'robots_txt' => $scan->pages->where('url', url($scan->domain . '/robots.txt'))->count() > 0 || true,
-        'sitemap_xml' => $scan->pages->where('url', url($scan->domain . '/sitemap.xml'))->count() > 0 || true,
+        'robots_txt' => $scan->has_robots_txt ?? true,
+        'sitemap_xml' => $scan->has_sitemap_xml ?? true,
     ];
-    
-    // Calculate broken links
-    $brokenLinks = $scan->pages->flatMap->links->where('status_code', 404)->count();
 @endphp
 
 @section('content')
@@ -66,8 +69,8 @@
             </ol>
         </nav>
 
-        <!-- Audit metadata banner -->
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-5 border-bottom pb-4" style="border-color: var(--border-default) !important;">
+        <!-- Audit metadata & Export Toolbar -->
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 border-bottom pb-4" style="border-color: var(--border-default) !important;">
             <div>
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
                     <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill font-monospace text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">SEO Audit Report</span>
@@ -78,9 +81,10 @@
                 <h1 class="fw-bold mb-1 text-dark" style="font-size: 2rem !important;">Target: {{ $scan->domain }}</h1>
                 <p class="text-muted small mb-0"><i class="bi bi-clock me-1"></i> Checked {{ $scan->created_at->diffForHumans() }} on {{ $scan->created_at->format('M d, Y h:i A') }}</p>
             </div>
-            <div>
-                <a href="{{ route('scan.history') }}" class="btn btn-outline-primary me-2"><i class="bi bi-arrow-left"></i> History</a>
-                <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Print</button>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <a href="{{ route('scan.export.pdf', $scan->uuid) }}" class="btn btn-primary shadow-sm"><i class="bi bi-file-earmark-pdf-fill me-1"></i> Download PDF</a>
+                <a href="{{ route('scan.export.csv', $scan->uuid) }}" class="btn btn-outline-success"><i class="bi bi-file-earmark-excel me-1"></i> Export CSV</a>
+                <button onclick="window.print()" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i> Print</button>
             </div>
         </div>
 
@@ -99,6 +103,24 @@
                 </div>
             </div>
         @endif
+
+        @php
+            // Category Health Scores (Derived from Homepage Audit)
+            $metaRules = ['meta.title', 'meta.description', 'og.basic_presence', 'html.lang', 'head.viewport', 'head.charset', 'head.favicon', 'head.invalid_elements', 'head.canonical'];
+            $secRules = ['security.ssrf', 'security.https', 'security.redirect_chain', 'security.headers', 'http.status_code'];
+            $contentRules = ['content.h1_count', 'content.heading_hierarchy', 'content.length', 'content.keyword_density', 'content.transition_words', 'content.long_sentences', 'content.shingle_duplicate'];
+            $perfRules = ['performance.ttfb', 'performance.compression', 'performance.css_size', 'performance.js_size', 'performance.html_size', 'image.optimization', 'image.no_lazy_loading', 'image.unoptimized_format', 'image.large_size', 'content.modern_image_formats', 'image.dimensions'];
+
+            $metaCount = $homepageIssues->whereIn('rule', $metaRules)->count();
+            $secCount = $homepageIssues->whereIn('rule', $secRules)->count();
+            $contentCount = $homepageIssues->whereIn('rule', $contentRules)->count();
+            $perfCount = $homepageIssues->whereIn('rule', $perfRules)->count();
+
+            $metaScore = max(10, min(100, 100 - ($metaCount * 15)));
+            $secScore = max(10, min(100, 100 - ($secCount * 20)));
+            $contentScore = max(10, min(100, 100 - ($contentCount * 12)));
+            $perfScore = max(10, min(100, 100 - ($perfCount * 5)));
+        @endphp
 
         <!-- Metric Cards & Visual Gauges -->
         <div class="row g-4 mb-5">
@@ -146,6 +168,57 @@
                                 <span>{!! $sitewideChecks['sitemap_xml'] ? '✅' : '❌' !!}</span>
                             </li>
                         </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Sub-Scores Breakdown -->
+        <div class="card border-0 shadow-sm p-4 mb-5">
+            <h5 class="fw-bold text-dark mb-4"><i class="bi bi-bar-chart-steps text-primary me-2"></i> Category Health Audit Breakdown</h5>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-secondary">Meta & Structure</span>
+                            <span class="badge {{ $metaScore >= 70 ? 'bg-success' : ($metaScore >= 50 ? 'bg-warning text-dark' : 'bg-danger') }}">{{ $metaScore }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {{ $metaScore >= 70 ? 'bg-success' : ($metaScore >= 50 ? 'bg-warning' : 'bg-danger') }}" style="width: {{ $metaScore }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-secondary">Security & Headers</span>
+                            <span class="badge {{ $secScore >= 70 ? 'bg-success' : ($secScore >= 50 ? 'bg-warning text-dark' : 'bg-danger') }}">{{ $secScore }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {{ $secScore >= 70 ? 'bg-success' : ($secScore >= 50 ? 'bg-warning' : 'bg-danger') }}" style="width: {{ $secScore }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-secondary">Content & Headings</span>
+                            <span class="badge {{ $contentScore >= 70 ? 'bg-success' : ($contentScore >= 50 ? 'bg-warning text-dark' : 'bg-danger') }}">{{ $contentScore }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {{ $contentScore >= 70 ? 'bg-success' : ($contentScore >= 50 ? 'bg-warning' : 'bg-danger') }}" style="width: {{ $contentScore }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="p-3 border rounded-3 bg-light">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="fw-bold text-secondary">Performance & Media</span>
+                            <span class="badge {{ $perfScore >= 70 ? 'bg-success' : ($perfScore >= 50 ? 'bg-warning text-dark' : 'bg-danger') }}">{{ $perfScore }}%</span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar {{ $perfScore >= 70 ? 'bg-success' : ($perfScore >= 50 ? 'bg-warning' : 'bg-danger') }}" style="width: {{ $perfScore }}%"></div>
+                        </div>
                     </div>
                 </div>
             </div>

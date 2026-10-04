@@ -4,6 +4,7 @@ namespace App\Services\Seo;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use App\Services\Seo\SafeUrlService;
 
 class RobotsTxtService
 {
@@ -12,10 +13,20 @@ class RobotsTxtService
 
     public function fetch(string $url): self
     {
+        $this->rules = []; // Reset stateful rules
+        $this->sitemaps = []; // Reset stateful sitemaps
+
         try {
             $parsed = parse_url($url);
+            if (!$parsed || empty($parsed['scheme']) || empty($parsed['host'])) {
+                return $this;
+            }
             $baseUrl = $parsed['scheme'] . '://' . $parsed['host'];
             $robotsUrl = $baseUrl . '/robots.txt';
+
+            if (!SafeUrlService::isSafeUrl($robotsUrl)) {
+                return $this;
+            }
 
             $response = Http::timeout(5)->get($robotsUrl);
 
@@ -72,8 +83,11 @@ class RobotsTxtService
 
             $pattern = preg_quote($rulePath, '#');
             $pattern = str_replace('\*', '.*', $pattern);
+            $pattern = str_replace('\$', '$', $pattern);
             
-            if (preg_match('#^' . $pattern . '#', $path)) {
+            $regex = '#' . (str_ends_with($rulePath, '$') ? '^' . rtrim($pattern, '$') . '$' : '^' . $pattern) . '#';
+
+            if (preg_match($regex, $path)) {
                  if (strlen($rulePath) >= $longestMatch) {
                      $longestMatch = strlen($rulePath);
                      $allowed = ($rule['type'] === 'allow');
@@ -82,5 +96,15 @@ class RobotsTxtService
         }
 
         return $allowed;
+    }
+
+    public function getRules(): array
+    {
+        return $this->rules;
+    }
+
+    public function getSitemaps(): array
+    {
+        return $this->sitemaps;
     }
 }

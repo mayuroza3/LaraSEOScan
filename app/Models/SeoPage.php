@@ -19,6 +19,11 @@ class SeoPage extends Model
         'canonical',
         'robots',
         'headings',
+        'headers',
+        'ttfb_ms',
+        'html_size_bytes',
+        'redirect_chain',
+        'redirect_count',
         'status_code',
         'word_count',
         'shingle_signature',
@@ -31,6 +36,8 @@ class SeoPage extends Model
 
     protected $casts = [
         'headings' => 'array',
+        'headers' => 'array',
+        'redirect_chain' => 'array',
         'structured_data' => 'array',
         'keyword_density' => 'array',
         'fetched_at' => 'datetime',

@@ -9,7 +9,13 @@ class JsonLdValidatorRule implements SeoRule
     public function title(): string { return 'JSON-LD validation (schema.org)'; }
     public function category(): string { return 'structured'; }
 
-    protected $supported = ['Article','Product','BreadcrumbList','FAQPage','HowTo','WebSite','Organization','Person'];
+    protected $supported = [
+        'Article', 'NewsArticle', 'BlogPosting', 'Product', 'BreadcrumbList', 'FAQPage',
+        'HowTo', 'WebSite', 'WebPage', 'Organization', 'Corporation', 'LocalBusiness',
+        'Person', 'Service', 'Course', 'Event', 'JobPosting', 'SoftwareApplication',
+        'ListItem', 'ImageObject', 'Offer', 'AggregateRating', 'Review', 'SearchAction',
+        'EntryPoint', 'PostalAddress', 'ContactPoint', 'GeoCoordinates', 'Brand'
+    ];
 
     public function check(SeoPage $page, \DOMDocument $dom, \DOMXPath $xpath): array
     {
@@ -35,7 +41,9 @@ class JsonLdValidatorRule implements SeoRule
             }
 
             $objs = [];
-            if (isset($decoded[0]) && is_array($decoded)) {
+            if (isset($decoded['@graph']) && is_array($decoded['@graph'])) {
+                $objs = $decoded['@graph'];
+            } elseif (isset($decoded[0]) && is_array($decoded)) {
                 $objs = $decoded;
             } else {
                 $objs = [$decoded];

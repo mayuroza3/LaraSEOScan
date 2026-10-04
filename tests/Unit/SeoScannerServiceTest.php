@@ -17,14 +17,15 @@ class SeoScannerServiceTest extends TestCase
     {
         // Fake HTML response
         Http::fake([
-            '*' => Http::response(
-                '<html><head><title>SEO Title</title><meta name="description" content="SEO description"></head></html>'
+            'https://example.com*' => Http::response(
+                '<html><head><title>SEO Title</title><meta name="description" content="SEO description"></head></html>',
+                200
             ),
         ]);
 
         $scan = SeoScan::factory()->create(['url' => 'https://example.com']);
 
-        $service = new SeoScannerService;
+        $service = app(SeoScannerService::class);
         $service->scan($scan);
 
         $this->assertEquals('SEO Title', $scan->pages()->first()->title);

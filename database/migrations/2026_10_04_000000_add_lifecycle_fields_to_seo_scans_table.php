@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('seo_scans', function (Blueprint $table) {
+            $table->text('error_message')->nullable()->after('status');
+            $table->timestamp('failed_at')->nullable()->after('error_message');
+            $table->integer('score')->nullable()->after('failed_at');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('seo_scans', function (Blueprint $table) {
+            $table->dropColumn(['error_message', 'failed_at', 'score']);
+        });
+    }
+};

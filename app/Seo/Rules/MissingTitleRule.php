@@ -13,7 +13,7 @@ class MissingTitleRule implements SeoRule
     {
         $issues = [];
 
-        $nodes = $xpath->query('//head/title');
+        $nodes = $xpath->query('//title');
         $title = null;
         if ($nodes->length) {
             $title = trim($nodes->item(0)->textContent);

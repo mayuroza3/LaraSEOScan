@@ -20,9 +20,9 @@ class SeoScanControllerTest extends TestCase
         $userScan = SeoScan::factory()->for($user)->create();
         $otherScan = SeoScan::factory()->for($otherUser)->create();
 
-        $response = $this->actingAs($user)->get('/scan');
+        $response = $this->actingAs($user)->get('/scan/history');
 
-        $response->assertSee($userScan->url);
-        $response->assertDontSee($otherScan->url);
+        $response->assertSee($userScan->domain);
+        $response->assertDontSee($otherScan->domain);
     }
 }

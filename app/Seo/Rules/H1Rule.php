@@ -12,12 +12,14 @@ class H1Rule implements SeoRule
     public function check(SeoPage $page, \DOMDocument $dom, \DOMXPath $xpath): array
     {
         $issues = [];
-        $headings = $page->headings ?? [];
-
-        $h1s = array_filter($headings, function ($h) {
-            return strtolower($h['tag'] ?? '') === 'h1';
-        });
-        $count = count($h1s);
+        $h1Nodes = $xpath->query('//h1');
+        $count = $h1Nodes ? $h1Nodes->length : 0;
+        if ($count === 0 && !empty($page->headings)) {
+            $h1s = array_filter($page->headings, function ($h) {
+                return strtolower($h['tag'] ?? '') === 'h1';
+            });
+            $count = count($h1s);
+        }
 
         if ($count === 0) {
             $issues[] = [

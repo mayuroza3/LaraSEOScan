@@ -11,7 +11,18 @@ class SeoScan extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $fillable = ['url', 'status', 'user_id', 'has_robots_txt', 'has_sitemap_xml', 'uuid', 'type'];
+    protected $fillable = [
+        'url',
+        'status',
+        'error_message',
+        'failed_at',
+        'score',
+        'user_id',
+        'has_robots_txt',
+        'has_sitemap_xml',
+        'uuid',
+        'type'
+    ];
 
     protected static function booted()
     {
@@ -40,17 +51,38 @@ class SeoScan extends Model
 
     public function getScoreAttribute()
     {
-        $issues = \App\Models\SeoIssue::whereHas('page', function ($q) {
-            $q->where('seo_scan_id', $this->id);
-        })->get();
+        if (isset($this->attributes['score']) && $this->attributes['score'] !== null) {
+            return (int) $this->attributes['score'];
+        }
+
+        return $this->calculateScore();
+    }
+
+    public function calculateScore(): int
+    {
+        $homepage = $this->pages()->where('url', $this->url)->first()
+                 ?? $this->pages()->first();
+
+        if (!$homepage) {
+            return 100;
+        }
+
+        $issues = $homepage->issues;
 
         $critical = $issues->where('severity', 'critical')->count();
         $errors = $issues->where('severity', 'error')->count();
         $warnings = $issues->where('severity', 'warning')->count();
 
-        // 100 is base score. Deduct weights.
+        // 100 is base score. Deduct weights based on target page audit.
         $score = 100 - ($critical * 15) - ($errors * 8) - ($warnings * 1);
-        return max(0, min(100, $score));
+        return (int) max(0, min(100, $score));
+    }
+
+    public function calculateAndStoreScore(): int
+    {
+        $score = $this->calculateScore();
+        $this->update(['score' => $score]);
+        return $score;
     }
 
     public function user()

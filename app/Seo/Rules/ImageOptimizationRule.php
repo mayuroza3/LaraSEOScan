@@ -22,30 +22,20 @@ class ImageOptimizationRule implements SeoRule
         $nodes = $xpath->query('//img[@src]');
         foreach ($nodes as $node) {
             $src = $node->getAttribute('src');
-            $loading = $node->getAttribute('loading');
-            
             if (!$src) continue;
-            
-            // Check lazy loading
-            if ($loading !== 'lazy') {
-                 $issues[] = [
-                    'rule' => 'image.no_lazy_loading',
-                    'severity' => 'warning',
-                    'message' => 'Image missing lazy loading attribute.',
-                    'selector' => 'img[src="' . $src . '"]',
-                    'context' => ['src' => $src],
-                ];
-            }
             
             // Resolve URL
             $fullUrl = $this->resolveUrl($src, $page->url);
+            if (!\App\Services\Seo\SafeUrlService::isSafeUrl($fullUrl)) {
+                continue;
+            }
             $images[] = ['src' => $src, 'url' => $fullUrl];
         }
 
         if (empty($images)) return $issues;
 
         // Check size and format via HEAD requests
-        $client = new Client(['timeout' => 5, 'http_errors' => false]);
+        $client = new Client(['timeout' => 3, 'http_errors' => false]);
         
         $totalSize = 0;
         $unoptimizedCount = 0;
@@ -63,37 +53,26 @@ class ImageOptimizationRule implements SeoRule
             'fulfilled' => function ($response, $index) use (&$issues, $images, &$totalSize, &$unoptimizedCount) {
                 $img = $images[$index];
                 
-                // Check format
                 $contentType = $response->getHeaderLine('Content-Type');
-                if ($contentType && !preg_match('/image\/(webp|avif)/', $contentType)) {
-                     // Only warn if it's jpeg/png
-                     if (preg_match('/image\/(jpeg|png)/', $contentType)) {
-                         $unoptimizedCount++;
-                         $issues[] = [
-                            'rule' => 'image.unoptimized_format',
-                            'severity' => 'warning',
-                            'message' => 'Image format is not WebP or AVIF.',
-                            'selector' => 'img[src="' . $img['src'] . '"]',
-                            'context' => ['src' => $img['src'], 'type' => $contentType],
-                        ];
-                     }
+                if ($contentType && !preg_match('/image\/(webp|avif|svg\+xml)/i', $contentType)) {
+                    if (preg_match('/image\/(jpeg|png|gif)/i', $contentType)) {
+                        $unoptimizedCount++;
+                    }
                 }
 
                 // Check size
                 $contentLength = $response->getHeaderLine('Content-Length');
                 if ($contentLength) {
                     $sizeKb = (int) $contentLength / 1024;
-                    // Aggregate total size
-                    // Since Guzzle promises run sequentially in loop, this is safeish
                     $totalSize += (int) $contentLength;
                     
                     if ($sizeKb > 200) {
                         $issues[] = [
                             'rule' => 'image.large_size',
                             'severity' => 'warning',
-                            'message' => "Image size ({$sizeKb}KB) exceeds 200KB.",
+                            'message' => "Image size (" . round($sizeKb) . "KB) exceeds 200KB limit.",
                             'selector' => 'img[src="' . $img['src'] . '"]',
-                            'context' => ['src' => $img['src'], 'size_kb' => $sizeKb],
+                            'context' => ['src' => $img['src'], 'size_kb' => round($sizeKb)],
                         ];
                     }
                 }
@@ -103,7 +82,11 @@ class ImageOptimizationRule implements SeoRule
             },
         ]);
 
-        $pool->promise()->wait();
+        try {
+            $pool->promise()->wait();
+        } catch (\Throwable $e) {
+            // Log or ignore network timeout during image checks
+        }
         
         // Update Page model
         $page->image_total_size = $totalSize;
